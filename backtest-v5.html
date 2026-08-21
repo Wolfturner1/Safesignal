@@ -1,0 +1,2512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V5</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:#080c13;
+color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+main{
+max-width:900px;
+margin:auto;
+padding:18px 14px 50px
+}
+
+a{
+color:#9fb4d4;
+text-decoration:none
+}
+
+.eyebrow{
+font-size:11px;
+letter-spacing:2px;
+color:#78869c
+}
+
+h1{
+font-size:31px;
+margin:5px 0
+}
+
+h2{
+margin:0 0 12px
+}
+
+.subtitle{
+color:#8997ad;
+font-size:13px;
+line-height:1.5
+}
+
+.card{
+background:#101722;
+border:1px solid #202b3b;
+border-radius:18px;
+padding:16px;
+margin-top:14px
+}
+
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px
+}
+
+label{
+font-size:12px;
+color:#8997ad
+}
+
+select{
+display:block;
+width:100%;
+margin-top:6px;
+padding:12px;
+background:#0b111a;
+color:white;
+border:1px solid #293548;
+border-radius:11px;
+font-size:15px
+}
+
+button{
+grid-column:1/-1;
+padding:14px;
+border:0;
+border-radius:12px;
+background:white;
+color:#080c13;
+font-weight:900;
+font-size:15px
+}
+
+button:disabled{
+opacity:.5
+}
+
+#status{
+margin:12px 3px;
+color:#8997ad;
+font-size:12px
+}
+
+.metric{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:10px 0;
+border-bottom:1px solid #202b3b
+}
+
+.metric:last-child{
+border-bottom:0
+}
+
+.metric span{
+color:#8997ad;
+font-size:13px
+}
+
+.metric strong{
+text-align:right
+}
+
+.good{
+color:#70e5b7
+}
+
+.bad{
+color:#ff899a
+}
+
+.warn{
+color:#ffd27a
+}
+
+.rating{
+background:#0b111a;
+padding:15px;
+border-radius:14px;
+text-align:center;
+font-size:21px;
+font-weight:900
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+
+th,td{
+padding:9px 6px;
+border-bottom:1px solid #202b3b;
+text-align:right
+}
+
+th:first-child,
+td:first-child{
+text-align:left
+}
+
+.scroll{
+overflow:auto
+}
+
+.regimes{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px
+}
+
+.regime{
+background:#0b111a;
+border-radius:14px;
+padding:13px;
+text-align:center
+}
+
+.regime span{
+display:block;
+font-size:12px;
+color:#8997ad
+}
+
+.regime b{
+display:block;
+margin-top:6px;
+font-size:20px
+}
+
+.warning{
+border:1px solid #574a2a;
+background:#17150e;
+color:#aaa084;
+font-size:12px;
+line-height:1.5
+}
+
+@media(max-width:650px){
+
+.controls{
+grid-template-columns:1fr
+}
+
+.regimes{
+grid-template-columns:1fr
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">
+← SafeSignal
+</a>
+
+<div style="margin-top:18px">
+
+<div class="eyebrow">
+REGIME + WALK FORWARD
+</div>
+
+<h1>SafeSignal V5</h1>
+
+<div class="subtitle">
+Die Strategie wird in Bull-, Bear- und Seitwärtsphasen getrennt
+behandelt und anschließend über mehrere unabhängige Zeitfenster getestet.
+</div>
+
+</div>
+
+
+<section class="card controls">
+
+<label>
+Coin
+
+<select id="symbol">
+<option value="BTCUSDT">Bitcoin (BTC)</option>
+<option value="ETHUSDT">Ethereum (ETH)</option>
+<option value="SOLUSDT">Solana (SOL)</option>
+<option value="BNBUSDT">BNB</option>
+<option value="XRPUSDT">XRP</option>
+<option value="DOGEUSDT">Dogecoin</option>
+</select>
+
+</label>
+
+
+<label>
+Trading-Zeitraum
+
+<select id="interval">
+<option value="15m">15 Minuten</option>
+<option value="1h" selected>1 Stunde</option>
+<option value="4h">4 Stunden</option>
+</select>
+
+</label>
+
+
+<label>
+Testzeitraum
+
+<select id="days">
+<option value="365">1 Jahr</option>
+<option value="730" selected>2 Jahre</option>
+<option value="1095">3 Jahre</option>
+</select>
+
+</label>
+
+
+<label>
+Walk-Forward-Fenster
+
+<select id="windows">
+<option value="3">3 Fenster</option>
+<option value="4" selected>4 Fenster</option>
+<option value="6">6 Fenster</option>
+</select>
+
+</label>
+
+
+<label>
+Gebühr pro Order
+
+<select id="fee">
+<option value="0">0 %</option>
+<option value="0.0005">0,05 %</option>
+<option value="0.001" selected>0,10 %</option>
+<option value="0.0015">0,15 %</option>
+</select>
+
+</label>
+
+
+<label>
+Risiko pro Trade
+
+<select id="risk">
+<option value="0.005">0,5 %</option>
+<option value="0.01" selected>1,0 %</option>
+<option value="0.015">1,5 %</option>
+</select>
+
+</label>
+
+
+<button id="run">
+V5 WALK-FORWARD STARTEN
+</button>
+
+</section>
+
+
+<div id="status">
+Bereit.
+</div>
+
+
+<section class="card">
+
+<h2>Marktregime</h2>
+
+<div class="regimes">
+
+<div class="regime">
+<span>🟢 Bull</span>
+<b id="bullCount">—</b>
+<span>Kerzen</span>
+</div>
+
+<div class="regime">
+<span>🔴 Bear</span>
+<b id="bearCount">—</b>
+<span>Kerzen</span>
+</div>
+
+<div class="regime">
+<span>🟡 Seitwärts</span>
+<b id="sideCount">—</b>
+<span>Kerzen</span>
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Gesamtergebnis</h2>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="trades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="winRate">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="performance">—</strong>
+</div>
+
+<div class="metric">
+<span>Max. Drawdown</span>
+<strong id="drawdown">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="pf">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="average">—</strong>
+</div>
+
+<div class="metric">
+<span>Long Trades</span>
+<strong id="longTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Short Trades</span>
+<strong id="shortTrades">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Walk-Forward-Ergebnisse</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Fenster</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Perf.</th>
+<th>PF</th>
+<th>DD</th>
+</tr>
+</thead>
+
+<tbody id="windowList">
+
+<tr>
+<td colspan="6">
+Noch keine Daten
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Robustheitsprüfung</h2>
+
+<div class="metric">
+<span>Positive Fenster</span>
+<strong id="positiveWindows">—</strong>
+</div>
+
+<div class="metric">
+<span>PF > 1</span>
+<strong id="pfWindows">—</strong>
+</div>
+
+<div class="metric">
+<span>Schlechtestes Fenster</span>
+<strong id="worstWindow">—</strong>
+</div>
+
+<div class="metric">
+<span>Bestes Fenster</span>
+<strong id="bestWindow">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>V5 Bewertung</h2>
+
+<div class="rating" id="rating">
+Noch kein Test
+</div>
+
+<div class="subtitle"
+id="ratingText"
+style="text-align:center;margin-top:12px">
+
+Entscheidend ist, ob mehrere unabhängige Zeitfenster positiv sind.
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Verwendete V5-Regeln</h2>
+
+<div class="subtitle">
+
+<ul>
+
+<li>
+EMA200 definiert zusammen mit EMA50 das übergeordnete Marktregime.
+</li>
+
+<li>
+Long-Trades werden nur im Bull-Regime erlaubt.
+</li>
+
+<li>
+Short-Trades werden nur im Bear-Regime erlaubt.
+</li>
+
+<li>
+In Seitwärtsphasen gibt SafeSignal grundsätzlich WARTEN aus.
+</li>
+
+<li>
+ADX muss mindestens 25 betragen.
+</li>
+
+<li>
+Volumen muss mindestens 10 % über dem 20-Kerzen-Durchschnitt liegen.
+</li>
+
+<li>
+Long-RSI: 52 bis 66.
+</li>
+
+<li>
+Short-RSI: 34 bis 48.
+</li>
+
+<li>
+MACD muss die jeweilige Richtung bestätigen.
+</li>
+
+<li>
+Stop-Loss: 1,5 ATR.
+</li>
+
+<li>
+Take-Profit: 3 ATR.
+</li>
+
+<li>
+Nach einem Stop-Loss folgt ein Cooldown.
+</li>
+
+<li>
+Maximal das gewählte Kontorisiko wird pro Trade riskiert.
+</li>
+
+</ul>
+
+</div>
+
+</section>
+
+
+<section class="card warning">
+
+<b>⚠️ Wichtig</b>
+
+<br><br>
+
+V5 soll nicht automatisch eine profitable Strategie erzeugen.
+
+Wenn auch V5 in mehreren unabhängigen Zeitfenstern keinen stabilen
+statistischen Vorteil zeigt, sollten wir diese Strategie verwerfen,
+anstatt immer weiter Parameter an die Vergangenheit anzupassen.
+
+</section>
+
+</main>
+
+
+<script>
+
+const API =
+"https://api.binance.com/api/v3";
+
+const $ =
+id => document.getElementById(id);
+
+
+
+function ema(v,p){
+
+const r =
+Array(v.length).fill(null);
+
+if(v.length<p)
+return r;
+
+let e =
+v.slice(0,p)
+.reduce((a,b)=>a+b,0)
+/p;
+
+r[p-1]=e;
+
+const k =
+2/(p+1);
+
+for(let i=p;i<v.length;i++){
+
+e =
+v[i]*k
++
+e*(1-k);
+
+r[i]=e;
+
+}
+
+return r;
+
+}
+
+
+
+function rsi(v,p=14){
+
+const r =
+Array(v.length).fill(null);
+
+let gain=0;
+let loss=0;
+
+
+for(let i=1;i<=p;i++){
+
+const d =
+v[i]-v[i-1];
+
+gain +=
+Math.max(d,0);
+
+loss +=
+Math.max(-d,0);
+
+}
+
+
+let avgGain =
+gain/p;
+
+let avgLoss =
+loss/p;
+
+
+r[p] =
+
+avgLoss===0
+
+?100
+
+:100-
+100/
+(
+1+
+avgGain/avgLoss
+);
+
+
+for(let i=p+1;i<v.length;i++){
+
+const d =
+v[i]-v[i-1];
+
+
+avgGain =
+
+(
+avgGain*(p-1)
++
+Math.max(d,0)
+)
+/p;
+
+
+avgLoss =
+
+(
+avgLoss*(p-1)
++
+Math.max(-d,0)
+)
+/p;
+
+
+r[i] =
+
+avgLoss===0
+
+?100
+
+:100-
+100/
+(
+1+
+avgGain/avgLoss
+);
+
+}
+
+
+return r;
+
+}
+
+
+
+function atr(h,l,c,p=14){
+
+const out =
+Array(c.length).fill(null);
+
+const tr =
+Array(c.length).fill(null);
+
+
+for(let i=1;i<c.length;i++){
+
+tr[i] =
+Math.max(
+
+h[i]-l[i],
+
+Math.abs(
+h[i]-c[i-1]
+),
+
+Math.abs(
+l[i]-c[i-1]
+)
+
+);
+
+}
+
+
+let a=0;
+
+
+for(let i=1;i<=p;i++)
+a+=tr[i];
+
+
+a/=p;
+
+out[p]=a;
+
+
+for(let i=p+1;i<c.length;i++){
+
+a =
+(
+a*(p-1)
++
+tr[i]
+)
+/p;
+
+out[i]=a;
+
+}
+
+
+return out;
+
+}
+
+
+
+function adx(h,l,c,p=14){
+
+const n=c.length;
+
+const tr =
+Array(n).fill(0);
+
+const plus =
+Array(n).fill(0);
+
+const minus =
+Array(n).fill(0);
+
+const result =
+Array(n).fill(null);
+
+
+for(let i=1;i<n;i++){
+
+const up =
+h[i]-h[i-1];
+
+const down =
+l[i-1]-l[i];
+
+
+plus[i] =
+up>down && up>0
+?up
+:0;
+
+
+minus[i] =
+down>up && down>0
+?down
+:0;
+
+
+tr[i] =
+Math.max(
+
+h[i]-l[i],
+
+Math.abs(
+h[i]-c[i-1]
+),
+
+Math.abs(
+l[i]-c[i-1]
+)
+
+);
+
+}
+
+
+let trs=0;
+let ps=0;
+let ms=0;
+
+
+for(let i=1;i<=p;i++){
+
+trs+=tr[i];
+ps+=plus[i];
+ms+=minus[i];
+
+}
+
+
+const dx =
+Array(n).fill(null);
+
+
+for(let i=p;i<n;i++){
+
+if(i>p){
+
+trs =
+trs-trs/p+tr[i];
+
+ps =
+ps-ps/p+plus[i];
+
+ms =
+ms-ms/p+minus[i];
+
+}
+
+
+const pdi =
+trs===0
+?0
+:100*ps/trs;
+
+
+const mdi =
+trs===0
+?0
+:100*ms/trs;
+
+
+dx[i] =
+
+pdi+mdi===0
+
+?0
+
+:100*
+Math.abs(pdi-mdi)
+/
+(pdi+mdi);
+
+}
+
+
+let sum=0;
+let count=0;
+
+
+for(let i=p;i<n;i++){
+
+if(dx[i]!==null){
+
+sum+=dx[i];
+
+count++;
+
+if(count===p)
+break;
+
+}
+
+}
+
+
+if(count<p)
+return result;
+
+
+let current =
+sum/p;
+
+
+const start =
+p+count-1;
+
+
+result[start] =
+current;
+
+
+for(let i=start+1;i<n;i++){
+
+current =
+(
+current*(p-1)
++
+dx[i]
+)
+/p;
+
+result[i] =
+current;
+
+}
+
+
+return result;
+
+}
+
+
+
+function indicators(data){
+
+const open =
+data.map(x=>Number(x[1]));
+
+const high =
+data.map(x=>Number(x[2]));
+
+const low =
+data.map(x=>Number(x[3]));
+
+const close =
+data.map(x=>Number(x[4]));
+
+const volume =
+data.map(x=>Number(x[5]));
+
+const time =
+data.map(x=>Number(x[6]));
+
+
+const e20 =
+ema(close,20);
+
+const e50 =
+ema(close,50);
+
+const e200 =
+ema(close,200);
+
+
+const RS =
+rsi(close);
+
+const ATR =
+atr(high,low,close);
+
+const ADX =
+adx(high,low,close);
+
+
+const e12 =
+ema(close,12);
+
+const e26 =
+ema(close,26);
+
+
+const macd =
+Array(close.length)
+.fill(null);
+
+
+for(let i=26;i<close.length;i++){
+
+if(
+e12[i]!==null &&
+e26[i]!==null
+){
+
+macd[i] =
+e12[i]-e26[i];
+
+}
+
+}
+
+
+const valid=[];
+const map=[];
+
+
+for(let i=0;i<macd.length;i++){
+
+if(macd[i]!==null){
+
+valid.push(macd[i]);
+map.push(i);
+
+}
+
+}
+
+
+const tempSignal =
+ema(valid,9);
+
+
+const macdSignal =
+Array(close.length)
+.fill(null);
+
+
+for(let i=0;i<tempSignal.length;i++){
+
+macdSignal[
+map[i]
+]
+=
+tempSignal[i];
+
+}
+
+
+return{
+
+open,
+high,
+low,
+close,
+volume,
+time,
+
+e20,
+e50,
+e200,
+
+RS,
+ATR,
+ADX,
+
+macd,
+macdSignal
+
+};
+
+}
+
+
+
+function volumeRatio(i,ind){
+
+if(i<20)
+return 0;
+
+
+let total=0;
+
+
+for(let x=i-20;x<i;x++)
+total+=ind.volume[x];
+
+
+const average =
+total/20;
+
+
+if(average===0)
+return 0;
+
+
+return
+ind.volume[i]
+/
+average;
+
+}
+
+
+
+function regime(i,ind){
+
+if(i<200)
+return "SIDE";
+
+
+const price =
+ind.close[i];
+
+
+const e50 =
+ind.e50[i];
+
+
+const e200 =
+ind.e200[i];
+
+
+if(
+price>e200 &&
+e50>e200
+){
+
+return "BULL";
+
+}
+
+
+if(
+price<e200 &&
+e50<e200
+){
+
+return "BEAR";
+
+}
+
+
+return "SIDE";
+
+}
+
+
+
+function getSignal(i,ind){
+
+if(i<200)
+return null;
+
+
+const market =
+regime(i,ind);
+
+
+if(market==="SIDE")
+return null;
+
+
+const R =
+ind.RS[i];
+
+
+const A =
+ind.ATR[i];
+
+
+const AX =
+ind.ADX[i];
+
+
+const M =
+ind.macd[i];
+
+
+const MS =
+ind.macdSignal[i];
+
+
+if(
+R===null ||
+A===null ||
+AX===null ||
+M===null ||
+MS===null
+)
+return null;
+
+
+if(AX<25)
+return null;
+
+
+const vr =
+volumeRatio(i,ind);
+
+
+if(vr<1.10)
+return null;
+
+
+
+if(
+
+market==="BULL"
+
+&&
+
+ind.close[i] >
+ind.e20[i]
+
+&&
+
+ind.e20[i] >
+ind.e50[i]
+
+&&
+
+M > MS
+
+&&
+
+R>=52
+
+&&
+
+R<=66
+
+){
+
+return{
+
+type:"LONG",
+atr:A
+
+};
+
+}
+
+
+
+if(
+
+market==="BEAR"
+
+&&
+
+ind.close[i] <
+ind.e20[i]
+
+&&
+
+ind.e20[i] <
+ind.e50[i]
+
+&&
+
+M < MS
+
+&&
+
+R>=34
+
+&&
+
+R<=48
+
+){
+
+return{
+
+type:"SHORT",
+atr:A
+
+};
+
+}
+
+
+return null;
+
+}
+
+
+
+function runWindow(
+ind,
+start,
+end,
+fee,
+risk
+){
+
+let equity=100;
+
+let peak=100;
+
+let maxDD=0;
+
+let position=null;
+
+let cooldown=-1;
+
+const trades=[];
+
+
+
+for(
+let i=Math.max(200,start);
+i<Math.min(end,ind.close.length-1);
+i++
+){
+
+
+
+if(position){
+
+
+const high =
+ind.high[i];
+
+const low =
+ind.low[i];
+
+
+let exit=null;
+let reason=null;
+
+
+
+if(
+position.type==="LONG"
+){
+
+if(
+low<=position.stop
+){
+
+exit=position.stop;
+
+reason="SL";
+
+}
+
+else if(
+high>=position.tp
+){
+
+exit=position.tp;
+
+reason="TP";
+
+}
+
+}
+
+
+else{
+
+
+if(
+high>=position.stop
+){
+
+exit=position.stop;
+
+reason="SL";
+
+}
+
+else if(
+low<=position.tp
+){
+
+exit=position.tp;
+
+reason="TP";
+
+}
+
+}
+
+
+
+if(exit!==null){
+
+
+let raw;
+
+
+if(
+position.type==="LONG"
+){
+
+raw =
+(
+exit-position.entry
+)
+/position.entry;
+
+}
+
+else{
+
+raw =
+(
+position.entry-exit
+)
+/position.entry;
+
+}
+
+
+
+const accountReturn =
+
+raw *
+position.fraction
+
+-
+
+fee *
+2 *
+position.fraction;
+
+
+
+equity *=
+1+accountReturn;
+
+
+
+if(equity>peak)
+peak=equity;
+
+
+
+const dd =
+(
+peak-equity
+)
+/peak;
+
+
+
+if(dd>maxDD)
+maxDD=dd;
+
+
+
+trades.push({
+
+type:
+position.type,
+
+return:
+accountReturn,
+
+reason
+
+});
+
+
+
+if(reason==="SL")
+cooldown=i+12;
+
+
+
+position=null;
+
+}
+
+
+continue;
+
+}
+
+
+
+if(i<cooldown)
+continue;
+
+
+
+const signal =
+getSignal(i,ind);
+
+
+
+if(!signal)
+continue;
+
+
+
+const entry =
+ind.open[i+1];
+
+
+const A =
+signal.atr;
+
+
+let stop;
+let tp;
+
+
+
+if(
+signal.type==="LONG"
+){
+
+stop =
+entry-
+1.5*A;
+
+tp =
+entry+
+3*A;
+
+}
+
+
+else{
+
+stop =
+entry+
+1.5*A;
+
+tp =
+entry-
+3*A;
+
+}
+
+
+
+const stopPct =
+Math.abs(
+entry-stop
+)
+/entry;
+
+
+
+if(stopPct<=0)
+continue;
+
+
+
+let fraction =
+risk /
+stopPct;
+
+
+
+fraction =
+Math.min(
+fraction,
+1
+);
+
+
+
+position={
+
+type:
+signal.type,
+
+entry,
+
+stop,
+
+tp,
+
+fraction
+
+};
+
+}
+
+
+
+return{
+
+trades,
+equity,
+maxDD
+
+};
+
+}
+
+
+
+function stats(result){
+
+const trades =
+result.trades;
+
+
+const wins =
+trades.filter(
+x=>x.return>0
+);
+
+
+const losses =
+trades.filter(
+x=>x.return<=0
+);
+
+
+const grossProfit =
+wins.reduce(
+(s,x)=>s+x.return,
+0
+);
+
+
+const grossLoss =
+Math.abs(
+
+losses.reduce(
+(s,x)=>s+x.return,
+0
+)
+
+);
+
+
+const PF =
+
+grossLoss>0
+
+?
+
+grossProfit/grossLoss
+
+:
+
+grossProfit>0
+
+?
+
+Infinity
+
+:
+
+0;
+
+
+
+return{
+
+trades:
+trades.length,
+
+
+winRate:
+
+trades.length
+
+?
+
+wins.length/
+trades.length*
+100
+
+:
+
+0,
+
+
+performance:
+
+result.equity-
+100,
+
+
+drawdown:
+
+result.maxDD*
+100,
+
+
+pf:
+PF,
+
+
+average:
+
+trades.length
+
+?
+
+trades.reduce(
+(s,x)=>s+x.return,
+0
+)
+/trades.length*
+100
+
+:
+
+0,
+
+
+longTrades:
+
+trades.filter(
+x=>x.type==="LONG"
+).length,
+
+
+shortTrades:
+
+trades.filter(
+x=>x.type==="SHORT"
+).length
+
+};
+
+}
+
+
+
+async function loadHistory(
+symbol,
+interval,
+start,
+end
+){
+
+const all=[];
+
+let cursor=start;
+
+
+while(cursor<end){
+
+
+$("status").textContent =
+
+"Daten werden geladen · "
++
+all.length
++
+" Kerzen";
+
+
+const url =
+
+API+
+"/klines?symbol="+
+symbol+
+"&interval="+
+interval+
+"&startTime="+
+cursor+
+"&endTime="+
+end+
+"&limit=1000";
+
+
+const response =
+await fetch(url);
+
+
+if(!response.ok){
+
+throw new Error(
+"Marktdaten konnten nicht geladen werden."
+);
+
+}
+
+
+const batch =
+await response.json();
+
+
+if(!batch.length)
+break;
+
+
+all.push(...batch);
+
+
+cursor =
+
+Number(
+batch[
+batch.length-1
+][0]
+)
++1;
+
+
+if(batch.length<1000)
+break;
+
+
+await new Promise(
+r=>setTimeout(r,70)
+);
+
+}
+
+
+return all;
+
+}
+
+
+
+function formatPF(x){
+
+return x===Infinity
+?"∞"
+:x.toFixed(2);
+
+}
+
+
+
+function displayTotal(s){
+
+$("trades").textContent =
+s.trades;
+
+
+$("winRate").textContent =
+s.winRate.toFixed(1)
++
+"%";
+
+
+$("performance").textContent =
+
+(
+s.performance>=0
+?"+"
+:""
+)
+
++
+s.performance.toFixed(2)
++
+"%";
+
+
+$("performance").className =
+
+s.performance>=0
+?"good"
+:"bad";
+
+
+$("drawdown").textContent =
+"-"
++
+s.drawdown.toFixed(2)
++
+"%";
+
+
+$("pf").textContent =
+formatPF(s.pf);
+
+
+$("average").textContent =
+
+(
+s.average>=0
+?"+"
+:""
+)
+
++
+s.average.toFixed(2)
++
+"%";
+
+
+$("longTrades").textContent =
+s.longTrades;
+
+
+$("shortTrades").textContent =
+s.shortTrades;
+
+}
+
+
+
+function evaluate(results,total){
+
+const positive =
+results.filter(
+x=>x.performance>0
+).length;
+
+
+const pfPositive =
+results.filter(
+x=>x.pf>1
+).length;
+
+
+$("positiveWindows").textContent =
+
+positive
++
+" / "
++
+results.length;
+
+
+$("pfWindows").textContent =
+
+pfPositive
++
+" / "
++
+results.length;
+
+
+const ordered =
+[...results]
+.sort(
+(a,b)=>
+a.performance-
+b.performance
+);
+
+
+const worst =
+ordered[0];
+
+
+const best =
+ordered[
+ordered.length-1
+];
+
+
+$("worstWindow").textContent =
+
+(
+worst.performance>=0
+?"+"
+:""
+)
++
+worst.performance.toFixed(2)
++
+"%";
+
+
+$("bestWindow").textContent =
+
+(
+best.performance>=0
+?"+"
+:""
+)
++
+best.performance.toFixed(2)
++
+"%";
+
+
+
+let title;
+let text;
+
+
+
+if(
+total.trades<30
+){
+
+title =
+"⚠️ Zu wenig Trades";
+
+text =
+"Die Strategie erzeugt noch zu wenige Signale für eine belastbare Beurteilung.";
+
+}
+
+
+else if(
+
+positive===results.length
+
+&&
+
+pfPositive===results.length
+
+&&
+
+total.pf>=1.4
+
+&&
+
+total.performance>0
+
+&&
+
+total.drawdown<15
+
+){
+
+title =
+"🟢 Robustheitsprüfung bestanden";
+
+text =
+"Alle Walk-Forward-Fenster waren profitabel und der Gesamt-Profit-Faktor ist überzeugend. Trotzdem zuerst Paper-Trading durchführen.";
+
+}
+
+
+else if(
+
+positive >=
+Math.ceil(
+results.length*0.75
+)
+
+&&
+
+total.pf>=1.2
+
+&&
+
+total.performance>0
+
+){
+
+title =
+"🟡 Vielversprechend";
+
+text =
+"Die Mehrzahl der unabhängigen Zeitfenster war positiv. Weitere Coins und Zeiträume sollten getestet werden.";
+
+}
+
+
+else{
+
+title =
+"🔴 Nicht robust";
+
+text =
+"Die Strategie zeigt über mehrere unabhängige Marktphasen keinen stabilen statistischen Vorteil.";
+
+}
+
+
+
+$("rating").textContent =
+title;
+
+
+$("ratingText").textContent =
+text;
+
+}
+
+
+
+async function run(){
+
+const button =
+$("run");
+
+
+button.disabled=true;
+
+
+
+try{
+
+
+const symbol =
+$("symbol").value;
+
+
+const interval =
+$("interval").value;
+
+
+const days =
+Number(
+$("days").value
+);
+
+
+const windows =
+Number(
+$("windows").value
+);
+
+
+const fee =
+Number(
+$("fee").value
+);
+
+
+const risk =
+Number(
+$("risk").value
+);
+
+
+
+const now =
+Date.now();
+
+
+const start =
+
+now
+
+-
+
+days*
+24*
+60*
+60*
+1000;
+
+
+
+const warmup =
+
+start
+
+-
+
+120*
+24*
+60*
+60*
+1000;
+
+
+
+const data =
+
+await loadHistory(
+
+symbol,
+
+interval,
+
+warmup,
+
+now
+
+);
+
+
+
+if(data.length<500){
+
+throw new Error(
+"Nicht genügend Marktdaten."
+);
+
+}
+
+
+
+const ind =
+indicators(data);
+
+
+
+let first =
+
+ind.time.findIndex(
+x=>x>=start
+);
+
+
+if(first<200)
+first=200;
+
+
+
+let bullCount=0;
+let bearCount=0;
+let sideCount=0;
+
+
+
+for(
+let i=first;
+i<ind.close.length;
+i++
+){
+
+const r =
+regime(i,ind);
+
+
+if(r==="BULL")
+bullCount++;
+
+
+else if(r==="BEAR")
+bearCount++;
+
+
+else
+sideCount++;
+
+}
+
+
+
+$("bullCount").textContent =
+bullCount;
+
+
+$("bearCount").textContent =
+bearCount;
+
+
+$("sideCount").textContent =
+sideCount;
+
+
+
+const usable =
+ind.close.length-
+first;
+
+
+
+const size =
+Math.floor(
+usable/windows
+);
+
+
+
+const results=[];
+
+let combinedTrades=[];
+
+let combinedEquity=100;
+
+let combinedPeak=100;
+
+let combinedDD=0;
+
+
+
+for(
+let w=0;
+w<windows;
+w++
+){
+
+
+$("status").textContent =
+
+"Walk-Forward-Fenster "
++
+(w+1)
++
+" / "
++
+windows
++
+" wird getestet…";
+
+
+
+const windowStart =
+
+first+
+w*size;
+
+
+
+const windowEnd =
+
+w===windows-1
+
+?
+
+ind.close.length-1
+
+:
+
+windowStart+
+size;
+
+
+
+const result =
+
+runWindow(
+
+ind,
+
+windowStart,
+
+windowEnd,
+
+fee,
+
+risk
+
+);
+
+
+
+const s =
+stats(result);
+
+
+
+results.push(s);
+
+
+
+combinedTrades.push(
+...result.trades
+);
+
+
+
+const windowReturn =
+
+result.equity/
+100-
+1;
+
+
+
+combinedEquity *=
+1+
+windowReturn;
+
+
+
+if(combinedEquity>
+combinedPeak){
+
+combinedPeak =
+combinedEquity;
+
+}
+
+
+
+const dd =
+
+(
+combinedPeak-
+combinedEquity
+)
+/
+combinedPeak;
+
+
+
+if(dd>combinedDD)
+combinedDD=dd;
+
+}
+
+
+
+const combined =
+
+stats({
+
+trades:
+combinedTrades,
+
+equity:
+combinedEquity,
+
+maxDD:
+combinedDD
+
+});
+
+
+
+displayTotal(
+combined
+);
+
+
+
+$("windowList").innerHTML =
+
+results.map(
+(s,i)=>
+
+"<tr>"
++
+"<td>"
++
+(i+1)
++
+"</td>"
+
++
+"<td>"
++
+s.trades
++
+"</td>"
+
++
+"<td>"
++
+s.winRate.toFixed(1)
++
+"%</td>"
+
++
+"<td>"
++
+(
+s.performance>=0
+?"+"
+:""
+)
++
+s.performance.toFixed(2)
++
+"%</td>"
+
++
+"<td>"
++
+formatPF(s.pf)
++
+"</td>"
+
++
+"<td>-"
++
+s.drawdown.toFixed(2)
++
+"%</td>"
+
++
+"</tr>"
+
+).join("");
+
+
+
+evaluate(
+results,
+combined
+);
+
+
+
+$("status").textContent =
+
+"V5 abgeschlossen · "
++
+windows
++
+" unabhängige Zeitfenster getestet.";
+
+
+}
+
+catch(error){
+
+
+$("status").textContent =
+
+"Fehler: "
++
+error.message;
+
+
+}
+
+
+
+button.disabled=false;
+
+}
+
+
+
+$("run")
+.addEventListener(
+"click",
+run
+);
+
+</script>
+
+</body>
+</html>
