@@ -1,0 +1,369 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080c13;
+    color: #eef2f7;
+
+    font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.app {
+    max-width: 700px;
+    margin: auto;
+
+    padding:
+    20px
+    14px
+    50px;
+}
+
+
+/* HEADER */
+
+header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 15px;
+}
+
+.eyebrow {
+    color: #77869c;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+}
+
+h1 {
+    margin: 3px 0;
+
+    font-size: 31px;
+}
+
+h2 {
+    margin: 10px 0;
+}
+
+h3 {
+    margin-top: 0;
+}
+
+
+/* CARDS */
+
+.card {
+    background: #101722;
+
+    border:
+    1px solid
+    #202b3b;
+
+    border-radius: 18px;
+
+    padding: 16px;
+
+    margin-bottom: 12px;
+}
+
+
+/* REFRESH */
+
+.refresh {
+    width: 46px;
+    height: 46px;
+
+    border-radius: 13px;
+
+    border:
+    1px solid
+    #263143;
+
+    background: #151c28;
+
+    color: white;
+
+    font-size: 24px;
+}
+
+
+/* CONTROLS */
+
+.controls {
+    display: grid;
+
+    grid-template-columns:
+    1fr
+    1fr;
+
+    gap: 10px;
+}
+
+.controls label {
+    color: #8997ad;
+
+    font-size: 12px;
+}
+
+select {
+    width: 100%;
+
+    margin-top: 6px;
+
+    padding: 12px;
+
+    border-radius: 11px;
+
+    border:
+    1px solid
+    #293548;
+
+    background: #0b111a;
+
+    color: white;
+
+    font-size: 15px;
+}
+
+.primary {
+    grid-column:
+    1 / -1;
+
+    border: 0;
+
+    border-radius: 12px;
+
+    padding: 14px;
+
+    background: white;
+
+    color: #080c13;
+
+    font-size: 15px;
+
+    font-weight: 900;
+}
+
+
+/* STATUS */
+
+.status {
+    color: #8492a8;
+
+    font-size: 12px;
+
+    padding:
+    2px
+    4px
+    10px;
+}
+
+
+/* SIGNAL */
+
+.signal-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+}
+
+.badge {
+    display: inline-block;
+
+    padding:
+    6px
+    11px;
+
+    border-radius:
+    999px;
+
+    font-size: 12px;
+
+    font-weight: 900;
+}
+
+.wait {
+    background: #273142;
+
+    color: #c8d1df;
+}
+
+.buy {
+    background: #0d6044;
+
+    color: #7ff0c2;
+}
+
+.sell {
+    background: #702b38;
+
+    color: #ff9eae;
+}
+
+
+.score-box strong {
+    font-size: 34px;
+}
+
+.score-box span {
+    color: #8290a5;
+
+    font-size: 13px;
+}
+
+
+.current-price {
+    margin-top: 20px;
+}
+
+.current-price small {
+    display: block;
+
+    color: #8492a8;
+
+    margin-bottom: 5px;
+}
+
+.current-price strong {
+    font-size: 29px;
+}
+
+
+/* INDICATORS */
+
+.indicator-grid {
+    display: grid;
+
+    grid-template-columns:
+    1fr
+    1fr;
+
+    gap: 12px;
+
+    margin-bottom: 12px;
+}
+
+.indicator {
+    margin: 0;
+}
+
+.indicator span {
+    display: block;
+
+    color: #8492a8;
+
+    font-size: 12px;
+
+    margin-bottom: 7px;
+}
+
+.indicator strong {
+    font-size: 18px;
+}
+
+
+/* LEVELS */
+
+.level {
+    display: flex;
+
+    justify-content: space-between;
+
+    padding:
+    11px
+    0;
+
+    border-bottom:
+    1px solid
+    #202b3b;
+}
+
+.level:last-child {
+    border-bottom: 0;
+}
+
+.level span {
+    color: #8997ad;
+}
+
+
+/* REASONS */
+
+ul {
+    padding-left: 20px;
+
+    margin-bottom: 0;
+}
+
+li {
+    margin: 9px 0;
+
+    color: #c8d1df;
+
+    line-height: 1.4;
+}
+
+
+/* RISK */
+
+.risk {
+    border:
+    1px solid
+    #574a2a;
+
+    background:
+    #17150e;
+
+    border-radius:
+    18px;
+
+    padding: 16px;
+
+    color: #d8cfb4;
+}
+
+.risk p {
+    color: #aaa084;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+/* FOOTER */
+
+footer {
+    margin-top: 20px;
+
+    text-align: center;
+
+    color: #657287;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* DESKTOP */
+
+@media (min-width: 600px) {
+
+    .indicator-grid {
+        grid-template-columns:
+        repeat(4, 1fr);
+    }
+
+}
