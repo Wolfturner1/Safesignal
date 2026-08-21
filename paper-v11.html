@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V11 Paper Trading</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:#080c13;
+color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+main{
+max-width:900px;
+margin:auto;
+padding:18px 14px 60px
+}
+
+a{
+color:#9fb4d4;
+text-decoration:none
+}
+
+.eyebrow{
+font-size:11px;
+letter-spacing:2px;
+color:#78869c
+}
+
+h1{
+font-size:31px;
+margin:5px 0
+}
+
+h2{
+margin:0 0 12px
+}
+
+.subtitle{
+color:#8997ad;
+font-size:13px;
+line-height:1.5
+}
+
+.card{
+background:#101722;
+border:1px solid #202b3b;
+border-radius:18px;
+padding:16px;
+margin-top:14px
+}
+
+button{
+width:100%;
+padding:14px;
+border:0;
+border-radius:12px;
+font-size:15px;
+font-weight:900;
+margin-top:10px
+}
+
+.primary{
+background:white;
+color:#080c13
+}
+
+.secondary{
+background:#172131;
+color:#eef2f7;
+border:1px solid #293548
+}
+
+.danger{
+background:#32151b;
+color:#ff9aa8;
+border:1px solid #66303a
+}
+
+#status{
+margin:12px 3px;
+font-size:12px;
+color:#8997ad
+}
+
+.marketGrid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px
+}
+
+.market{
+background:#0b111a;
+padding:14px;
+border-radius:14px
+}
+
+.market small{
+display:block;
+color:#8997ad
+}
+
+.market strong{
+display:block;
+margin-top:6px;
+font-size:18px
+}
+
+.metric{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:10px 0;
+border-bottom:1px solid #202b3b
+}
+
+.metric:last-child{
+border-bottom:0
+}
+
+.metric span{
+color:#8997ad;
+font-size:13px
+}
+
+.metric strong{
+text-align:right
+}
+
+.good{color:#70e5b7}
+.bad{color:#ff899a}
+.wait{color:#ffd27a}
+
+.badge{
+display:inline-block;
+padding:6px 10px;
+border-radius:999px;
+font-size:12px;
+font-weight:900
+}
+
+.badge-long{
+background:#0d6044;
+color:#7ff0c2
+}
+
+.badge-short{
+background:#702b38;
+color:#ff9eae
+}
+
+.badge-wait{
+background:#273142;
+color:#c8d1df
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+
+th,td{
+padding:9px 6px;
+border-bottom:1px solid #202b3b;
+text-align:right;
+white-space:nowrap
+}
+
+th:first-child,
+td:first-child{
+text-align:left
+}
+
+.scroll{
+overflow:auto
+}
+
+.rating{
+padding:15px;
+background:#0b111a;
+border-radius:14px;
+font-size:20px;
+font-weight:900;
+text-align:center
+}
+
+.warning{
+border:1px solid #574a2a;
+background:#17150e;
+color:#aaa084;
+font-size:12px;
+line-height:1.5
+}
+
+@media(max-width:700px){
+.marketGrid{
+grid-template-columns:1fr
+}
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">← SafeSignal</a>
+
+<div style="margin-top:18px">
+
+<div class="eyebrow">
+FORWARD / PAPER TRADING
+</div>
+
+<h1>SafeSignal V11</h1>
+
+<div class="subtitle">
+Volatility Expansion wird ab jetzt mit zukünftigen Marktdaten beobachtet.
+Keine rückwirkende Optimierung und keine echten Orders.
+</div>
+
+</div>
+
+
+<section class="card">
+
+<h2>Beobachtete Märkte</h2>
+
+<div class="marketGrid">
+
+<div class="market">
+<small>Ethereum</small>
+<strong>ETHUSDT · 4H</strong>
+</div>
+
+<div class="market">
+<small>Solana</small>
+<strong>SOLUSDT · 1H</strong>
+</div>
+
+<div class="market">
+<small>Bitcoin</small>
+<strong>BTCUSDT · 4H</strong>
+</div>
+
+</div>
+
+<button id="scan" class="primary">
+JETZT MARKT PRÜFEN
+</button>
+
+<button id="refresh" class="secondary">
+ERGEBNISSE AKTUALISIEREN
+</button>
+
+</section>
+
+
+<div id="status">
+Bereit.
+</div>
+
+
+<section class="card">
+
+<h2>Aktuelle Signale</h2>
+
+<div class="metric">
+<span>ETH · 4H</span>
+<strong id="signalETH">
+<span class="badge badge-wait">WARTEN</span>
+</strong>
+</div>
+
+<div class="metric">
+<span>SOL · 1H</span>
+<strong id="signalSOL">
+<span class="badge badge-wait">WARTEN</span>
+</strong>
+</div>
+
+<div class="metric">
+<span>BTC · 4H</span>
+<strong id="signalBTC">
+<span class="badge badge-wait">WARTEN</span>
+</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Forward-Test</h2>
+
+<div class="metric">
+<span>Geschlossene Trades</span>
+<strong id="trades">0</strong>
+</div>
+
+<div class="metric">
+<span>Offene Paper-Trades</span>
+<strong id="openTrades">0</strong>
+</div>
+
+<div class="metric">
+<span>Gewinner</span>
+<strong id="wins">0</strong>
+</div>
+
+<div class="metric">
+<span>Verlierer</span>
+<strong id="losses">0</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="winRate">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="profitFactor">—</strong>
+</div>
+
+<div class="metric">
+<span>Gesamtergebnis</span>
+<strong id="performance">0.00%</strong>
+</div>
+
+<div class="metric">
+<span>Expectancy</span>
+<strong id="expectancy">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Offene Paper-Trades</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Markt</th>
+<th>Typ</th>
+<th>Entry</th>
+<th>Stop</th>
+<th>Ziel</th>
+<th>Seit</th>
+</tr>
+</thead>
+
+<tbody id="openList">
+
+<tr>
+<td colspan="6">Keine offenen Trades</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Abgeschlossene Trades</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Datum</th>
+<th>Markt</th>
+<th>Typ</th>
+<th>Exit</th>
+<th>Ergebnis</th>
+</tr>
+</thead>
+
+<tbody id="history">
+
+<tr>
+<td colspan="5">Noch keine abgeschlossenen Trades</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>V11 Status</h2>
+
+<div id="rating" class="rating">
+⏳ Forward-Test läuft
+</div>
+
+<div
+id="ratingText"
+class="subtitle"
+style="text-align:center;margin-top:12px">
+
+Für eine brauchbare Beurteilung brauchen wir deutlich mehr zukünftige Trades.
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Eingefrorene Strategie</h2>
+
+<div class="metric">
+<span>Strategie</span>
+<strong>Volatility Expansion</strong>
+</div>
+
+<div class="metric">
+<span>Stop-Loss</span>
+<strong>1,8 ATR</strong>
+</div>
+
+<div class="metric">
+<span>Take-Profit</span>
+<strong>4,5 ATR</strong>
+</div>
+
+<div class="metric">
+<span>Trend</span>
+<strong>EMA50 / EMA200</strong>
+</div>
+
+<div class="metric">
+<span>ATR Expansion</span>
+<strong>≥ 1,30×</strong>
+</div>
+
+<div class="metric">
+<span>Risiko</span>
+<strong>0,5 % Paper-Risiko</strong>
+</div>
+
+<div class="metric">
+<span>Gebühr</span>
+<strong>0,10 % / Order</strong>
+</div>
+
+<div class="metric">
+<span>Slippage</span>
+<strong>0,05 %</strong>
+</div>
+
+</section>
+
+
+<section class="card warning">
+
+<b>⚠️ Wichtig</b>
+
+<br><br>
+
+V11 ist ausschließlich Paper-Trading.
+
+Es werden keine Binance-API-Schlüssel verwendet und keine Orders ausgeführt.
+
+Die Ergebnisse werden lokal in deinem Browser gespeichert.
+Wenn du Browserdaten löschst oder das Gerät wechselst, können die gespeicherten
+Paper-Trades verloren gehen.
+
+</section>
+
+
+<section class="card">
+
+<button id="reset" class="danger">
+PAPER-TRADING-DATEN ZURÜCKSETZEN
+</button>
+
+</section>
+
+</main>
+
+
+<script>
+
+const API =
+"https://api.binance.com/api/v3";
+
+
+const FEE =
+0.001;
+
+
+const SLIPPAGE =
+0.0005;
+
+
+const RISK =
+0.005;
+
+
+const CONFIGS = [
+
+{
+key:"ETH",
+symbol:"ETHUSDT",
+interval:"4h"
+},
+
+{
+key:"SOL",
+symbol:"SOLUSDT",
+interval:"1h"
+},
+
+{
+key:"BTC",
+symbol:"BTCUSDT",
+interval:"4h"
+}
+
+];
+
+
+const $ =
+id => document.getElementById(id);
+
+
+
+function loadState(){
+
+try{
+
+const saved =
+localStorage.getItem(
+"safesignal_v11"
+);
+
+
+if(saved)
+return JSON.parse(saved);
+
+}catch(e){}
+
+
+return{
+
+created:
+Date.now(),
+
+lastChecked:{},
+
+open:[],
+
+closed:[],
+
+seenSignals:{}
+
+};
+
+}
+
+
+
+let state =
+loadState();
+
+
+
+function saveState(){
+
+localStorage.setItem(
+"safesignal_v11",
+JSON.stringify(state)
+);
+
+}
+
+
+
+function ema(v,p){
+
+const out =
+Array(v.length).fill(null);
+
+
+if(v.length<p)
+return out;
+
+
+let value =
+
+v.slice(0,p)
+.reduce((a,b)=>a+b,0)
+/p;
+
+
+out[p-1] =
+value;
+
+
+const k =
+2/(p+1);
+
+
+for(let i=p;i<v.length;i++){
+
+value =
+
+v[i]*k
++
+value*(1-k);
+
+
+out[i] =
+value;
+
+}
+
+
+return out;
+
+}
+
+
+
+function atr(h,l,c,p=14){
+
+const out =
+Array(c.length).fill(null);
+
+
+const tr =
+Array(c.length).fill(null);
+
+
+for(let i=1;i<c.length;i++){
+
+tr[i] =
+
+Math.max(
+
+h[i]-l[i],
+
+Math.abs(
+h[i]-c[i-1]
+),
+
+Math.abs(
+l[i]-c[i-1]
+)
+
+);
+
+}
+
+
+let value=0;
+
+
+for(let i=1;i<=p;i++)
+value += tr[i];
+
+
+value /= p;
+
+
+out[p] =
+value;
+
+
+for(let i=p+1;i<c.length;i++){
+
+value =
+
+(
+value*(p-1)
++
+tr[i]
+)
+/p;
+
+
+out[i] =
+value;
+
+}
+
+
+return out;
+
+}
+
+
+
+function indicators(data){
+
+const open =
+data.map(x=>Number(x[1]));
+
+
+const high =
+data.map(x=>Number(x[2]));
+
+
+const low =
+data.map(x=>Number(x[3]));
+
+
+const close =
+data.map(x=>Number(x[4]));
+
+
+const openTime =
+data.map(x=>Number(x[0]));
+
+
+const closeTime =
+data.map(x=>Number(x[6]));
+
+
+return{
+
+open,
+high,
+low,
+close,
+openTime,
+closeTime,
+
+ema50:
+ema(close,50),
+
+ema200:
+ema(close,200),
+
+ATR:
+atr(high,low,close)
+
+};
+
+}
+
+
+
+async function loadCandles(
+symbol,
+interval,
+limit=300
+){
+
+const url =
+
+API+
+"/klines?symbol="+
+symbol+
+"&interval="+
+interval+
+"&limit="+
+limit;
+
+
+const response =
+await fetch(url);
+
+
+if(!response.ok){
+
+throw new Error(
+symbol+
+" konnte nicht geladen werden."
+);
+
+}
+
+
+return await response.json();
+
+}
+
+
+
+function volatilitySignal(
+i,
+ind
+){
+
+if(i<220)
+return null;
+
+
+const p =
+ind.close[i];
+
+
+const A =
+ind.ATR[i];
+
+
+const e50 =
+ind.ema50[i];
+
+
+const e200 =
+ind.ema200[i];
+
+
+if(
+A===null ||
+e50===null ||
+e200===null
+)
+return null;
+
+
+const atrPct =
+A/p;
+
+
+let avgATR=0;
+
+
+for(
+let x=i-20;
+x<i;
+x++
+){
+
+if(ind.ATR[x]===null)
+return null;
+
+
+avgATR +=
+
+ind.ATR[x]
+/
+ind.close[x];
+
+}
+
+
+avgATR /=20;
+
+
+
+if(
+atrPct <
+avgATR*1.30
+)
+return null;
+
+
+
+const candleMove =
+
+Math.abs(
+ind.close[i]-
+ind.open[i]
+)
+/ind.open[i];
+
+
+
+if(
+candleMove <
+atrPct*0.70
+)
+return null;
+
+
+
+const bullish =
+
+ind.close[i] >
+ind.open[i]
+
+&&
+
+p >
+e50
+
+&&
+
+e50 >
+e200;
+
+
+
+const bearish =
+
+ind.close[i] <
+ind.open[i]
+
+&&
+
+p <
+e50
+
+&&
+
+e50 <
+e200;
+
+
+
+if(bullish){
+
+return{
+
+type:"LONG",
+
+atr:A
+
+};
+
+}
+
+
+
+if(bearish){
+
+return{
+
+type:"SHORT",
+
+atr:A
+
+};
+
+}
+
+
+return null;
+
+}
+
+
+
+function entryWithSlip(
+price,
+type
+){
+
+return type==="LONG"
+
+?
+
+price*
+(1+SLIPPAGE)
+
+:
+
+price*
+(1-SLIPPAGE);
+
+}
+
+
+
+function exitWithSlip(
+price,
+type
+){
+
+return type==="LONG"
+
+?
+
+price*
+(1-SLIPPAGE)
+
+:
+
+price*
+(1+SLIPPAGE);
+
+}
+
+
+
+function createTrade(
+config,
+signal,
+entryRaw,
+signalTime,
+entryTime
+){
+
+const entry =
+
+entryWithSlip(
+entryRaw,
+signal.type
+);
+
+
+let stop;
+let target;
+
+
+if(
+signal.type==="LONG"
+){
+
+stop =
+entry-
+1.8*
+signal.atr;
+
+
+target =
+entry+
+4.5*
+signal.atr;
+
+}
+
+else{
+
+stop =
+entry+
+1.8*
+signal.atr;
+
+
+target =
+entry-
+4.5*
+signal.atr;
+
+}
+
+
+
+const stopPct =
+
+Math.abs(
+entry-stop
+)
+/entry;
+
+
+
+let fraction =
+
+RISK/
+stopPct;
+
+
+
+fraction =
+Math.min(
+fraction,
+1
+);
+
+
+
+return{
+
+id:
+config.symbol+
+"-"+
+config.interval+
+"-"+
+signalTime,
+
+
+key:
+config.key,
+
+
+symbol:
+config.symbol,
+
+
+interval:
+config.interval,
+
+
+type:
+signal.type,
+
+
+signalTime,
+
+
+entryTime,
+
+
+entry,
+
+
+stop,
+
+
+target,
+
+
+fraction
+
+};
+
+}
+
+
+
+function processTrade(
+trade,
+candles
+){
+
+for(const candle of candles){
+
+const openTime =
+Number(candle[0]);
+
+
+if(
+openTime <
+trade.entryTime
+)
+continue;
+
+
+const high =
+Number(candle[2]);
+
+
+const low =
+Number(candle[3]);
+
+
+let rawExit=null;
+
+let reason=null;
+
+
+
+if(
+trade.type==="LONG"
+){
+
+if(
+low<=trade.stop
+){
+
+rawExit =
+trade.stop;
+
+reason =
+"Stop-Loss";
+
+}
+
+else if(
+high>=trade.target
+){
+
+rawExit =
+trade.target;
+
+reason =
+"Take-Profit";
+
+}
+
+}
+
+
+else{
+
+
+if(
+high>=trade.stop
+){
+
+rawExit =
+trade.stop;
+
+reason =
+"Stop-Loss";
+
+}
+
+else if(
+low<=trade.target
+){
+
+rawExit =
+trade.target;
+
+reason =
+"Take-Profit";
+
+}
+
+}
+
+
+
+if(rawExit!==null){
+
+
+const exit =
+exitWithSlip(
+rawExit,
+trade.type
+);
+
+
+let marketReturn;
+
+
+if(
+trade.type==="LONG"
+){
+
+marketReturn =
+
+(exit-trade.entry)
+/
+trade.entry;
+
+}
+
+else{
+
+marketReturn =
+
+(trade.entry-exit)
+/
+trade.entry;
+
+}
+
+
+
+const result =
+
+marketReturn*
+trade.fraction
+
+-
+
+FEE*
+2*
+trade.fraction;
+
+
+
+return{
+
+closed:true,
+
+
+record:{
+
+...trade,
+
+
+exit,
+
+
+exitTime:
+Number(candle[6]),
+
+
+reason,
+
+
+return:
+result
+
+}
+
+};
+
+}
+
+}
+
+
+return{
+
+closed:false
+
+};
+
+}
+
+
+
+function signalBadge(
+signal
+){
+
+if(!signal){
+
+return(
+'<span class="badge badge-wait">WARTEN</span>'
+);
+
+}
+
+
+if(signal.type==="LONG"){
+
+return(
+'<span class="badge badge-long">LONG</span>'
+);
+
+}
+
+
+return(
+'<span class="badge badge-short">SHORT</span>'
+);
+
+}
+
+
+
+function formatPrice(
+value
+){
+
+return Number(value)
+.toLocaleString(
+"de-DE",
+{
+maximumFractionDigits:
+value>100
+?2
+:5
+}
+);
+
+}
+
+
+
+function formatDate(
+time
+){
+
+return new Date(time)
+.toLocaleString(
+"de-DE",
+{
+day:"2-digit",
+month:"2-digit",
+year:"2-digit",
+hour:"2-digit",
+minute:"2-digit"
+}
+);
+
+}
+
+
+
+async function scanMarket(
+config
+){
+
+const data =
+await loadCandles(
+config.symbol,
+config.interval,
+300
+);
+
+
+if(
+data.length<250
+)
+return;
+
+
+
+/*
+Letzte Kerze kann noch offen sein.
+
+Deshalb wird ausschließlich
+die vorletzte Kerze als
+abgeschlossenes Signal verwendet.
+*/
+
+
+const ind =
+indicators(data);
+
+
+const signalIndex =
+data.length-2;
+
+
+const signal =
+volatilitySignal(
+signalIndex,
+ind
+);
+
+
+
+$("signal"+config.key)
+.innerHTML =
+signalBadge(signal);
+
+
+
+/*
+Zuerst bestehende Trades
+mit den geladenen Kerzen
+nachziehen.
+*/
+
+
+const existing =
+
+state.open.filter(
+t=>
+t.symbol===
+config.symbol
+&&
+t.interval===
+config.interval
+);
+
+
+
+for(const trade of existing){
+
+
+const result =
+processTrade(
+trade,
+data
+);
+
+
+if(result.closed){
+
+
+state.open =
+state.open.filter(
+x=>x.id!==trade.id
+);
+
+
+state.closed.push(
+result.record
+);
+
+}
+
+}
+
+
+
+/*
+Neues Signal nur einmal
+erfassen.
+*/
+
+
+if(!signal)
+return;
+
+
+const signalTime =
+ind.closeTime[
+signalIndex
+];
+
+
+const id =
+
+config.symbol+
+"-"+
+config.interval+
+"-"+
+signalTime;
+
+
+
+if(
+state.seenSignals[id]
+)
+return;
+
+
+
+state.seenSignals[id] =
+true;
+
+
+
+/*
+Einstieg zur nächsten Kerze,
+also aktuelle letzte Kerze.
+*/
+
+
+const entryIndex =
+signalIndex+1;
+
+
+if(
+entryIndex>=data.length
+)
+return;
+
+
+
+/*
+Pro Markt nur eine
+offene Position gleichzeitig.
+*/
+
+
+const alreadyOpen =
+
+state.open.some(
+t=>
+t.symbol===
+config.symbol
+&&
+t.interval===
+config.interval
+);
+
+
+
+if(alreadyOpen)
+return;
+
+
+
+const trade =
+
+createTrade(
+
+config,
+
+signal,
+
+ind.open[entryIndex],
+
+signalTime,
+
+ind.openTime[entryIndex]
+
+);
+
+
+state.open.push(
+trade
+);
+
+}
+
+
+
+function calculateStats(){
+
+const trades =
+state.closed;
+
+
+const wins =
+trades.filter(
+x=>x.return>0
+);
+
+
+const losses =
+trades.filter(
+x=>x.return<=0
+);
+
+
+
+const gp =
+wins.reduce(
+(s,x)=>s+x.return,
+0
+);
+
+
+const gl =
+Math.abs(
+losses.reduce(
+(s,x)=>s+x.return,
+0
+)
+);
+
+
+
+const pf =
+
+gl>0
+
+?
+
+gp/gl
+
+:
+
+gp>0
+
+?
+
+Infinity
+
+:
+
+0;
+
+
+
+let equity=100;
+
+
+for(const t of trades){
+
+equity *=
+1+
+t.return;
+
+}
+
+
+
+const performance =
+equity-
+100;
+
+
+
+const expectancy =
+
+trades.length
+
+?
+
+trades.reduce(
+(s,x)=>s+x.return,
+0
+)
+/trades.length
+*100
+
+:
+
+0;
+
+
+
+return{
+
+trades:
+trades.length,
+
+
+wins:
+wins.length,
+
+
+losses:
+losses.length,
+
+
+winRate:
+
+trades.length
+
+?
+
+wins.length/
+trades.length*
+100
+
+:
+
+0,
+
+
+pf,
+
+
+performance,
+
+
+expectancy
+
+};
+
+}
+
+
+
+function display(){
+
+const stats =
+calculateStats();
+
+
+
+$("trades").textContent =
+stats.trades;
+
+
+$("openTrades").textContent =
+state.open.length;
+
+
+$("wins").textContent =
+stats.wins;
+
+
+$("losses").textContent =
+stats.losses;
+
+
+$("winRate").textContent =
+
+stats.trades
+
+?
+
+stats.winRate.toFixed(1)
++
+"%"
+
+:
+
+"—";
+
+
+$("profitFactor").textContent =
+
+stats.trades
+
+?
+
+stats.pf===Infinity
+?"∞"
+:stats.pf.toFixed(2)
+
+:
+
+"—";
+
+
+$("performance").textContent =
+
+(
+stats.performance>=0
+?"+"
+:""
+)
+
++
+stats.performance.toFixed(2)
++
+"%";
+
+
+$("performance").className =
+
+stats.performance>=0
+?"good"
+:"bad";
+
+
+$("expectancy").textContent =
+
+stats.trades
+
+?
+
+(
+stats.expectancy>=0
+?"+"
+:""
+)
++
+stats.expectancy.toFixed(2)
++
+"%"
+
+:
+
+"—";
+
+
+
+if(state.open.length){
+
+
+$("openList").innerHTML =
+
+state.open.map(
+t=>
+
+"<tr>"+
+
+"<td>"+
+t.symbol.replace("USDT","")
++" · "+
+t.interval+
+"</td>"+
+
+"<td>"+
+t.type+
+"</td>"+
+
+"<td>"+
+formatPrice(t.entry)+
+"</td>"+
+
+"<td>"+
+formatPrice(t.stop)+
+"</td>"+
+
+"<td>"+
+formatPrice(t.target)+
+"</td>"+
+
+"<td>"+
+formatDate(t.entryTime)+
+"</td>"+
+
+"</tr>"
+
+)
+.join("");
+
+}
+
+else{
+
+
+$("openList").innerHTML =
+
+"<tr><td colspan='6'>Keine offenen Trades</td></tr>";
+
+}
+
+
+
+const history =
+state.closed
+.slice()
+.reverse()
+.slice(0,50);
+
+
+
+if(history.length){
+
+
+$("history").innerHTML =
+
+history.map(
+t=>
+
+"<tr>"+
+
+"<td>"+
+formatDate(t.exitTime)+
+"</td>"+
+
+"<td>"+
+t.symbol.replace("USDT","")
++" · "+
+t.interval+
+"</td>"+
+
+"<td>"+
+t.type+
+"</td>"+
+
+"<td>"+
+t.reason+
+"</td>"+
+
+"<td>"+
+(
+t.return>=0
+?"+"
+:""
+)
++
+(t.return*100)
+.toFixed(2)
++
+"%</td>"+
+
+"</tr>"
+
+)
+.join("");
+
+}
+
+else{
+
+
+$("history").innerHTML =
+
+"<tr><td colspan='5'>Noch keine abgeschlossenen Trades</td></tr>";
+
+}
+
+
+
+/*
+Forward-Test-Bewertung
+erst mit vernünftiger
+Stichprobe.
+*/
+
+
+if(stats.trades<20){
+
+
+$("rating").textContent =
+"⏳ Daten sammeln";
+
+
+$("ratingText").textContent =
+
+stats.trades+
+" von mindestens 20 ersten Paper-Trades abgeschlossen. Für eine ernsthafte Aussage sollten wir langfristig eher 50–100 Trades sammeln.";
+
+
+}
+
+
+else if(
+
+stats.trades>=50
+
+&&
+
+stats.pf>=1.30
+
+&&
+
+stats.performance>0
+
+&&
+
+stats.expectancy>0
+
+){
+
+
+$("rating").textContent =
+"🟢 Forward-Test positiv";
+
+
+$("ratingText").textContent =
+"Die eingefrorene V10-Strategie zeigt auch auf zukünftigen Daten einen positiven statistischen Vorteil. Trotzdem ist das keine Gewinngarantie.";
+
+
+}
+
+
+else if(
+
+stats.pf>=1.10
+
+&&
+
+stats.performance>0
+
+){
+
+
+$("rating").textContent =
+"🟡 Noch beobachten";
+
+
+$("ratingText").textContent =
+"Die Ergebnisse sind bislang positiv, aber noch nicht stark oder umfangreich genug.";
+
+
+}
+
+
+else{
+
+
+$("rating").textContent =
+"🔴 Forward-Test schwach";
+
+
+$("ratingText").textContent =
+"Die bisher gesammelten zukünftigen Trades bestätigen den V10-Backtest noch nicht.";
+
+}
+
+
+}
+
+
+
+async function scan(){
+
+const button =
+$("scan");
+
+
+button.disabled=true;
+
+
+$("status").textContent =
+"Neue Marktdaten werden geprüft…";
+
+
+try{
+
+
+for(const config of CONFIGS){
+
+
+$("status").textContent =
+
+config.symbol+
+" · "+
+config.interval+
+" wird geprüft…";
+
+
+await scanMarket(
+config
+);
+
+}
+
+
+saveState();
+
+
+display();
+
+
+$("status").textContent =
+
+"Prüfung abgeschlossen · "+
+new Date()
+.toLocaleTimeString(
+"de-DE",
+{
+hour:"2-digit",
+minute:"2-digit"
+}
+);
+
+
+}
+
+catch(error){
+
+
+$("status").textContent =
+
+"Fehler: "+
+error.message;
+
+}
+
+
+button.disabled=false;
+
+}
+
+
+
+$("scan")
+.addEventListener(
+"click",
+scan
+);
+
+
+
+$("refresh")
+.addEventListener(
+"click",
+async()=>{
+
+await scan();
+
+}
+);
+
+
+
+$("reset")
+.addEventListener(
+"click",
+()=>{
+
+
+const confirmed =
+confirm(
+"Wirklich alle V11 Paper-Trading-Daten löschen?"
+);
+
+
+if(!confirmed)
+return;
+
+
+localStorage.removeItem(
+"safesignal_v11"
+);
+
+
+state =
+loadState();
+
+
+location.reload();
+
+}
+);
+
+
+
+display();
+
+
+
+/*
+Beim Öffnen automatisch prüfen.
+*/
+
+scan();
+
+
+
+/*
+Solange die Seite geöffnet ist,
+alle 5 Minuten aktualisieren.
+*/
+
+setInterval(
+scan,
+300000
+);
+
+</script>
+
+</body>
+</html>
