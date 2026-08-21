@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080c13">
+
+<title>SafeSignal Backtest</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080c13;
+    color: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+main {
+    max-width: 700px;
+    margin: auto;
+    padding: 18px 14px 50px;
+}
+
+a {
+    color: #9fb4d4;
+    text-decoration: none;
+}
+
+.eyebrow {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #78869c;
+}
+
+h1 {
+    margin: 4px 0 5px;
+}
+
+.subtitle {
+    color: #8896aa;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.card {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 18px;
+    background: #101722;
+    border: 1px solid #202b3b;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+label {
+    color: #8997ad;
+    font-size: 12px;
+}
+
+select {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px;
+    background: #0b111a;
+    color: white;
+    border: 1px solid #293548;
+    border-radius: 11px;
+    font-size: 15px;
+}
+
+button {
+    grid-column: 1 / -1;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: white;
+    color: #080c13;
+    font-weight: 900;
+    font-size: 15px;
+}
+
+button:disabled {
+    opacity: .5;
+}
+
+#status {
+    margin-top: 12px;
+    color: #8997ad;
+    font-size: 12px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.metric {
+    padding: 15px;
+    border-radius: 16px;
+    background: #101722;
+    border: 1px solid #202b3b;
+}
+
+.metric span {
+    display: block;
+    color: #8492a8;
+    font-size: 11px;
+    margin-bottom: 7px;
+}
+
+.metric strong {
+    font-size: 20px;
+}
+
+.positive {
+    color: #70e5b7;
+}
+
+.negative {
+    color: #ff8b9b;
+}
+
+.neutral {
+    color: #e8edf4;
+}
+
+.rating {
+    text-align: center;
+}
+
+.rating strong {
+    display: block;
+    font-size: 25px;
+    margin: 6px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+td, th {
+    padding: 9px 5px;
+    border-bottom: 1px solid #202b3b;
+    text-align: right;
+}
+
+td:first-child,
+th:first-child {
+    text-align: left;
+}
+
+.warning {
+    margin-top: 14px;
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid #574a2a;
+    background: #17150e;
+    color: #aaa084;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media(min-width:600px) {
+
+    .grid {
+        grid-template-columns: repeat(4,1fr);
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">← SafeSignal</a>
+
+<div style="margin-top:18px">
+
+<div class="eyebrow">
+STRATEGY TESTING
+</div>
+
+<h1>SafeSignal Backtest</h1>
+
+<div class="subtitle">
+Teste die Signalstrategie auf historischen Marktdaten,
+bevor du echtes Geld verwendest.
+</div>
+
+</div>
+
+
+<section class="card controls">
+
+<label>
+
+Coin
+
+<select id="symbol">
+
+<option value="BTCUSDT">
+Bitcoin (BTC)
+</option>
+
+<option value="ETHUSDT">
+Ethereum (ETH)
+</option>
+
+<option value="SOLUSDT">
+Solana (SOL)
+</option>
+
+<option value="BNBUSDT">
+BNB
+</option>
+
+<option value="XRPUSDT">
+XRP
+</option>
+
+<option value="DOGEUSDT">
+Dogecoin
+</option>
+
+</select>
+
+</label>
+
+
+<label>
+
+Zeitraum
+
+<select id="interval">
+
+<option value="15m">
+15 Minuten
+</option>
+
+<option value="1h" selected>
+1 Stunde
+</option>
+
+<option value="4h">
+4 Stunden
+</option>
+
+<option value="1d">
+1 Tag
+</option>
+
+</select>
+
+</label>
+
+
+<label>
+
+Testzeitraum
+
+<select id="period">
+
+<option value="30">
+30 Tage
+</option>
+
+<option value="90">
+90 Tage
+</option>
+
+<option value="180">
+6 Monate
+</option>
+
+<option value="365" selected>
+1 Jahr
+</option>
+
+</select>
+
+</label>
+
+
+<label>
+
+Gebühr pro Order
+
+<select id="fee">
+
+<option value="0">
+0 %
+</option>
+
+<option value="0.0005">
+0,05 %
+</option>
+
+<option value="0.001" selected>
+0,10 %
+</option>
+
+<option value="0.0015">
+0,15 %
+</option>
+
+</select>
+
+</label>
+
+
+<button id="run">
+
+BACKTEST STARTEN
+
+</button>
+
+</section>
+
+
+<div id="status">
+Bereit.
+</div>
+
+
+<section class="grid">
+
+<div class="metric">
+<span>Trades</span>
+<strong id="trades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="winrate">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="return">—</strong>
+</div>
+
+<div class="metric">
+<span>Max. Drawdown</span>
+<strong id="drawdown">—</strong>
+</div>
+
+<div class="metric">
+<span>Gewinner</span>
+<strong id="wins">—</strong>
+</div>
+
+<div class="metric">
+<span>Verlierer</span>
+<strong id="losses">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="profitfactor">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="average">—</strong>
+</div>
+
+</section>
+
+
+<section class="card rating">
+
+<span>Strategie-Bewertung</span>
+
+<strong id="rating">
+Noch kein Test
+</strong>
+
+<div id="ratingText" class="subtitle">
+Starte zuerst einen Backtest.
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h3>Letzte Trades</h3>
+
+<div style="overflow:auto">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Typ</th>
+<th>Ergebnis</th>
+<th>Rendite</th>
+</tr>
+
+</thead>
+
+<tbody id="tradeList">
+
+<tr>
+<td colspan="3">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="warning">
+
+<b>⚠️ Wichtig</b><br><br>
+
+Ein erfolgreicher Backtest bedeutet nicht,
+dass die Strategie in Zukunft Gewinne erzielt.
+
+SafeSignal führt keine echten Orders aus.
+
+Der Backtest nimmt bei einer Kerze,
+die sowohl Stop-Loss als auch Take-Profit berührt,
+vorsichtshalber an, dass zuerst der Stop-Loss
+ausgelöst wurde.
+
+</section>
+
+</main>
+
+<script src="backtest.js"></script>
+
+</body>
+</html>
