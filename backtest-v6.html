@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V6</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;
+background:#080c13;
+color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+main{
+max-width:950px;
+margin:auto;
+padding:18px 14px 50px
+}
+a{color:#9fb4d4;text-decoration:none}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#78869c}
+h1{margin:5px 0;font-size:31px}
+h2{margin:0 0 12px}
+.subtitle{color:#8997ad;font-size:13px;line-height:1.5}
+.card{
+background:#101722;
+border:1px solid #202b3b;
+border-radius:18px;
+padding:16px;
+margin-top:14px
+}
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px
+}
+label{font-size:12px;color:#8997ad}
+select{
+display:block;
+width:100%;
+margin-top:6px;
+padding:12px;
+background:#0b111a;
+color:#fff;
+border:1px solid #293548;
+border-radius:11px;
+font-size:15px
+}
+button{
+grid-column:1/-1;
+padding:14px;
+border:0;
+border-radius:12px;
+background:white;
+color:#080c13;
+font-weight:900;
+font-size:15px
+}
+button:disabled{opacity:.5}
+#status{
+margin:12px 3px;
+font-size:12px;
+color:#8997ad
+}
+.compare{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px
+}
+.metric{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:10px 0;
+border-bottom:1px solid #202b3b
+}
+.metric:last-child{border-bottom:0}
+.metric span{color:#8997ad;font-size:13px}
+.metric strong{text-align:right}
+.good{color:#70e5b7}
+.bad{color:#ff899a}
+.warn{color:#ffd27a}
+.rating{
+margin-top:12px;
+background:#0b111a;
+padding:14px;
+border-radius:14px;
+text-align:center;
+font-weight:900;
+font-size:19px
+}
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+th,td{
+padding:9px 6px;
+border-bottom:1px solid #202b3b;
+text-align:right
+}
+th:first-child,td:first-child{text-align:left}
+.scroll{overflow:auto}
+.warning{
+border:1px solid #574a2a;
+background:#17150e;
+color:#aaa084;
+font-size:12px;
+line-height:1.5
+}
+@media(max-width:700px){
+.compare{grid-template-columns:1fr}
+.controls{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<a href="index.html">← SafeSignal</a>
+
+<div style="margin-top:18px">
+<div class="eyebrow">STRATEGY SHOOTOUT</div>
+<h1>SafeSignal V6</h1>
+<div class="subtitle">
+Breakout/Momentum gegen Mean-Reversion.
+Beide Strategien werden auf mehreren unabhängigen Zeitfenstern getestet.
+</div>
+</div>
+
+<section class="card controls">
+
+<label>
+Coin
+<select id="symbol">
+<option value="BTCUSDT">Bitcoin (BTC)</option>
+<option value="ETHUSDT">Ethereum (ETH)</option>
+<option value="SOLUSDT">Solana (SOL)</option>
+<option value="BNBUSDT">BNB</option>
+<option value="XRPUSDT">XRP</option>
+<option value="DOGEUSDT">Dogecoin</option>
+</select>
+</label>
+
+<label>
+Zeitraum
+<select id="interval">
+<option value="15m">15 Minuten</option>
+<option value="1h" selected>1 Stunde</option>
+<option value="4h">4 Stunden</option>
+</select>
+</label>
+
+<label>
+Testzeitraum
+<select id="days">
+<option value="365">1 Jahr</option>
+<option value="730" selected>2 Jahre</option>
+<option value="1095">3 Jahre</option>
+</select>
+</label>
+
+<label>
+Walk-Forward
+<select id="windows">
+<option value="3">3 Fenster</option>
+<option value="4" selected>4 Fenster</option>
+<option value="6">6 Fenster</option>
+</select>
+</label>
+
+<label>
+Gebühr pro Order
+<select id="fee">
+<option value="0">0 %</option>
+<option value="0.0005">0,05 %</option>
+<option value="0.001" selected>0,10 %</option>
+<option value="0.0015">0,15 %</option>
+</select>
+</label>
+
+<label>
+Risiko pro Trade
+<select id="risk">
+<option value="0.005">0,5 %</option>
+<option value="0.01" selected>1,0 %</option>
+<option value="0.015">1,5 %</option>
+</select>
+</label>
+
+<button id="run">
+V6 STRATEGIEN TESTEN
+</button>
+
+</section>
+
+<div id="status">Bereit.</div>
+
+<div class="compare">
+
+<section class="card">
+
+<h2>🚀 Breakout / Momentum</h2>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="boTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="boWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="boPerf">—</strong>
+</div>
+
+<div class="metric">
+<span>Drawdown</span>
+<strong id="boDD">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="boPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="boAvg">—</strong>
+</div>
+
+<div class="metric">
+<span>Positive Fenster</span>
+<strong id="boPositive">—</strong>
+</div>
+
+<div class="rating" id="boRating">
+Noch kein Test
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>↩️ Mean Reversion</h2>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="mrTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="mrWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="mrPerf">—</strong>
+</div>
+
+<div class="metric">
+<span>Drawdown</span>
+<strong id="mrDD">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="mrPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="mrAvg">—</strong>
+</div>
+
+<div class="metric">
+<span>Positive Fenster</span>
+<strong id="mrPositive">—</strong>
+</div>
+
+<div class="rating" id="mrRating">
+Noch kein Test
+</div>
+
+</section>
+
+</div>
+
+<section class="card">
+
+<h2>Walk-Forward – Breakout</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Fenster</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Perf.</th>
+<th>PF</th>
+<th>DD</th>
+</tr>
+</thead>
+
+<tbody id="boWindows">
+<tr><td colspan="6">Noch keine Daten</td></tr>
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>Walk-Forward – Mean Reversion</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Fenster</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Perf.</th>
+<th>PF</th>
+<th>DD</th>
+</tr>
+</thead>
+
+<tbody id="mrWindows">
+<tr><td colspan="6">Noch keine Daten</td></tr>
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>V6 Entscheidung</h2>
+
+<div class="rating" id="winner">
+Noch kein Test
+</div>
+
+<div class="subtitle" id="winnerText" style="text-align:center;margin-top:10px">
+Entscheidend ist nicht die höchste Trefferquote, sondern die Stabilität über mehrere Marktphasen.
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>Breakout-Regeln</h2>
+
+<div class="subtitle">
+<ul>
+<li>20-Kerzen-Hoch bzw. -Tief wird durchbrochen.</li>
+<li>EMA50 bestätigt die Trendrichtung.</li>
+<li>Volumen mindestens 20 % über Durchschnitt.</li>
+<li>ADX mindestens 22.</li>
+<li>Stop-Loss 1,5 ATR.</li>
+<li>Take-Profit 3 ATR.</li>
+<li>Cooldown nach Verlusttrade.</li>
+</ul>
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>Mean-Reversion-Regeln</h2>
+
+<div class="subtitle">
+<ul>
+<li>Preis muss stark von EMA20 abweichen.</li>
+<li>RSI muss überverkauft bzw. überkauft sein.</li>
+<li>Nur wenn ADX unter 25 liegt, also kein starker Trend besteht.</li>
+<li>Long bei negativer Übertreibung, Short bei positiver Übertreibung.</li>
+<li>Stop-Loss 1,5 ATR.</li>
+<li>Take-Profit 1,5 ATR.</li>
+<li>Cooldown nach Verlusttrade.</li>
+</ul>
+</div>
+
+</section>
+
+<section class="card warning">
+
+<b>⚠️ Wichtig</b><br><br>
+
+V6 dient nur zur Strategieprüfung. Keine dieser Strategien ist automatisch
+sicher oder profitabel. SafeSignal führt weiterhin keine echten Orders aus.
+
+</section>
+
+</main>
+
+<script>
+
+const API="https://api.binance.com/api/v3";
+const $=id=>document.getElementById(id);
+
+function ema(v,p){
+
+const r=Array(v.length).fill(null);
+
+if(v.length<p)return r;
+
+let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p;
+
+r[p-1]=e;
+
+const k=2/(p+1);
+
+for(let i=p;i<v.length;i++){
+
+e=v[i]*k+e*(1-k);
+
+r[i]=e;
+
+}
+
+return r;
+
+}
+
+function rsi(v,p=14){
+
+const r=Array(v.length).fill(null);
+
+let g=0,l=0;
+
+for(let i=1;i<=p;i++){
+
+const d=v[i]-v[i-1];
+
+g+=Math.max(d,0);
+l+=Math.max(-d,0);
+
+}
+
+let ag=g/p;
+let al=l/p;
+
+r[p]=al===0?100:100-100/(1+ag/al);
+
+for(let i=p+1;i<v.length;i++){
+
+const d=v[i]-v[i-1];
+
+ag=(ag*(p-1)+Math.max(d,0))/p;
+al=(al*(p-1)+Math.max(-d,0))/p;
+
+r[i]=al===0?100:100-100/(1+ag/al);
+
+}
+
+return r;
+
+}
+
+function atr(h,l,c,p=14){
+
+const out=Array(c.length).fill(null);
+const tr=Array(c.length).fill(null);
+
+for(let i=1;i<c.length;i++){
+
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let a=0;
+
+for(let i=1;i<=p;i++)
+a+=tr[i];
+
+a/=p;
+
+out[p]=a;
+
+for(let i=p+1;i<c.length;i++){
+
+a=(a*(p-1)+tr[i])/p;
+
+out[i]=a;
+
+}
+
+return out;
+
+}
+
+function adx(h,l,c,p=14){
+
+const n=c.length;
+
+const tr=Array(n).fill(0);
+const plus=Array(n).fill(0);
+const minus=Array(n).fill(0);
+const out=Array(n).fill(null);
+
+for(let i=1;i<n;i++){
+
+const up=h[i]-h[i-1];
+const down=l[i-1]-l[i];
+
+plus[i]=(up>down&&up>0)?up:0;
+minus[i]=(down>up&&down>0)?down:0;
+
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let trs=0,ps=0,ms=0;
+
+for(let i=1;i<=p;i++){
+
+trs+=tr[i];
+ps+=plus[i];
+ms+=minus[i];
+
+}
+
+const dx=Array(n).fill(null);
+
+for(let i=p;i<n;i++){
+
+if(i>p){
+
+trs=trs-trs/p+tr[i];
+ps=ps-ps/p+plus[i];
+ms=ms-ms/p+minus[i];
+
+}
+
+const pdi=trs===0?0:100*ps/trs;
+const mdi=trs===0?0:100*ms/trs;
+
+dx[i]=
+pdi+mdi===0
+?0
+:100*Math.abs(pdi-mdi)/(pdi+mdi);
+
+}
+
+let sum=0,count=0;
+
+for(let i=p;i<n;i++){
+
+if(dx[i]!==null){
+
+sum+=dx[i];
+count++;
+
+if(count===p)break;
+
+}
+
+}
+
+if(count<p)return out;
+
+let cur=sum/p;
+
+const start=p+count-1;
+
+out[start]=cur;
+
+for(let i=start+1;i<n;i++){
+
+cur=(cur*(p-1)+dx[i])/p;
+
+out[i]=cur;
+
+}
+
+return out;
+
+}
+
+function indicators(data){
+
+const open=data.map(x=>Number(x[1]));
+const high=data.map(x=>Number(x[2]));
+const low=data.map(x=>Number(x[3]));
+const close=data.map(x=>Number(x[4]));
+const volume=data.map(x=>Number(x[5]));
+
+return{
+open,
+high,
+low,
+close,
+volume,
+ema20:ema(close,20),
+ema50:ema(close,50),
+RSI:rsi(close),
+ATR:atr(high,low,close),
+ADX:adx(high,low,close)
+};
+
+}
+
+function avgVolume(i,ind){
+
+if(i<20)return null;
+
+let sum=0;
+
+for(let x=i-20;x<i;x++)
+sum+=ind.volume[x];
+
+return sum/20;
+
+}
+
+function highest(i,ind,n){
+
+let value=-Infinity;
+
+for(let x=i-n;x<i;x++)
+value=Math.max(value,ind.high[x]);
+
+return value;
+
+}
+
+function lowest(i,ind,n){
+
+let value=Infinity;
+
+for(let x=i-n;x<i;x++)
+value=Math.min(value,ind.low[x]);
+
+return value;
+
+}
+
+function breakoutSignal(i,ind){
+
+if(i<60)return null;
+
+const price=ind.close[i];
+
+const av=avgVolume(i,ind);
+
+if(!av)return null;
+
+const volumeRatio=ind.volume[i]/av;
+
+const AX=ind.ADX[i];
+
+const A=ind.ATR[i];
+
+if(
+AX===null ||
+A===null ||
+AX<22 ||
+volumeRatio<1.20
+)
+return null;
+
+const prevHigh=highest(i,ind,20);
+const prevLow=lowest(i,ind,20);
+
+if(
+price>prevHigh &&
+price>ind.ema50[i]
+){
+
+return{
+type:"LONG",
+atr:A
+};
+
+}
+
+if(
+price<prevLow &&
+price<ind.ema50[i]
+){
+
+return{
+type:"SHORT",
+atr:A
+};
+
+}
+
+return null;
+
+}
+
+function meanSignal(i,ind){
+
+if(i<60)return null;
+
+const price=ind.close[i];
+
+const e20=ind.ema20[i];
+
+const R=ind.RSI[i];
+
+const A=ind.ATR[i];
+
+const AX=ind.ADX[i];
+
+if(
+e20===null ||
+R===null ||
+A===null ||
+AX===null
+)
+return null;
+
+if(AX>=25)
+return null;
+
+const distance=(price-e20)/e20;
+
+if(
+distance<=-0.025 &&
+R<=30
+){
+
+return{
+type:"LONG",
+atr:A
+};
+
+}
+
+if(
+distance>=0.025 &&
+R>=70
+){
+
+return{
+type:"SHORT",
+atr:A
+};
+
+}
+
+return null;
+
+}
+
+function runStrategy(
+ind,
+start,
+end,
+fee,
+risk,
+strategy
+){
+
+let equity=100;
+let peak=100;
+let maxDD=0;
+let position=null;
+let cooldown=-1;
+
+const trades=[];
+
+for(
+let i=Math.max(60,start);
+i<Math.min(end,ind.close.length-1);
+i++
+){
+
+if(position){
+
+const h=ind.high[i];
+const l=ind.low[i];
+
+let exit=null;
+let reason=null;
+
+if(position.type==="LONG"){
+
+if(l<=position.stop){
+
+exit=position.stop;
+reason="SL";
+
+}else if(h>=position.tp){
+
+exit=position.tp;
+reason="TP";
+
+}
+
+}else{
+
+if(h>=position.stop){
+
+exit=position.stop;
+reason="SL";
+
+}else if(l<=position.tp){
+
+exit=position.tp;
+reason="TP";
+
+}
+
+}
+
+if(exit!==null){
+
+let raw;
+
+if(position.type==="LONG"){
+
+raw=(exit-position.entry)/position.entry;
+
+}else{
+
+raw=(position.entry-exit)/position.entry;
+
+}
+
+const net=
+raw*position.fraction
+-
+fee*2*position.fraction;
+
+equity*=1+net;
+
+if(equity>peak)peak=equity;
+
+const dd=(peak-equity)/peak;
+
+if(dd>maxDD)maxDD=dd;
+
+trades.push({
+type:position.type,
+return:net,
+reason
+});
+
+if(reason==="SL")
+cooldown=i+12;
+
+position=null;
+
+}
+
+continue;
+
+}
+
+if(i<cooldown)
+continue;
+
+let s=null;
+
+if(strategy==="BREAKOUT")
+s=breakoutSignal(i,ind);
+
+if(strategy==="MEAN")
+s=meanSignal(i,ind);
+
+if(!s)continue;
+
+const entry=ind.open[i+1];
+
+let stop;
+let tp;
+
+if(strategy==="BREAKOUT"){
+
+if(s.type==="LONG"){
+
+stop=entry-1.5*s.atr;
+tp=entry+3*s.atr;
+
+}else{
+
+stop=entry+1.5*s.atr;
+tp=entry-3*s.atr;
+
+}
+
+}else{
+
+if(s.type==="LONG"){
+
+stop=entry-1.5*s.atr;
+tp=entry+1.5*s.atr;
+
+}else{
+
+stop=entry+1.5*s.atr;
+tp=entry-1.5*s.atr;
+
+}
+
+}
+
+const stopPct=Math.abs(entry-stop)/entry;
+
+if(stopPct<=0)continue;
+
+let fraction=risk/stopPct;
+
+fraction=Math.min(fraction,1);
+
+position={
+type:s.type,
+entry,
+stop,
+tp,
+fraction
+};
+
+}
+
+return{
+trades,
+equity,
+maxDD
+};
+
+}
+
+function stats(result){
+
+const t=result.trades;
+
+const wins=t.filter(x=>x.return>0);
+const losses=t.filter(x=>x.return<=0);
+
+const gp=wins.reduce((s,x)=>s+x.return,0);
+
+const gl=Math.abs(
+losses.reduce((s,x)=>s+x.return,0)
+);
+
+const pf=
+gl>0
+?gp/gl
+:gp>0
+?Infinity
+:0;
+
+return{
+trades:t.length,
+winRate:t.length?wins.length/t.length*100:0,
+performance:result.equity-100,
+drawdown:result.maxDD*100,
+pf,
+average:t.length
+?t.reduce((s,x)=>s+x.return,0)/t.length*100
+:0
+};
+
+}
+
+async function loadHistory(
+symbol,
+interval,
+start,
+end
+){
+
+const all=[];
+
+let cursor=start;
+
+while(cursor<end){
+
+$("status").textContent=
+"Daten werden geladen · "+
+all.length+
+" Kerzen";
+
+const url=
+API+
+"/klines?symbol="+symbol+
+"&interval="+interval+
+"&startTime="+cursor+
+"&endTime="+end+
+"&limit=1000";
+
+const response=await fetch(url);
+
+if(!response.ok)
+throw new Error("Marktdaten konnten nicht geladen werden.");
+
+const batch=await response.json();
+
+if(!batch.length)break;
+
+all.push(...batch);
+
+cursor=
+Number(
+batch[batch.length-1][0]
+)+1;
+
+if(batch.length<1000)
+break;
+
+await new Promise(
+r=>setTimeout(r,70)
+);
+
+}
+
+return all;
+
+}
+
+function fmtPF(x){
+
+return x===Infinity
+?"∞"
+:x.toFixed(2);
+
+}
+
+function combine(results){
+
+let equity=100;
+let peak=100;
+let dd=0;
+
+let allTrades=[];
+
+for(const r of results){
+
+const change=
+r.equity/100-1;
+
+equity*=1+change;
+
+if(equity>peak)
+peak=equity;
+
+const currentDD=
+(peak-equity)/peak;
+
+if(currentDD>dd)
+dd=currentDD;
+
+allTrades.push(...r.trades);
+
+}
+
+return{
+trades:allTrades,
+equity,
+maxDD:dd
+};
+
+}
+
+function rating(stats,positive,total){
+
+if(stats.trades<30)
+return "⚠️ Zu wenig Trades";
+
+if(
+stats.performance>0 &&
+stats.pf>=1.4 &&
+positive>=Math.ceil(total*0.75)
+)
+return "🟢 Stark";
+
+if(
+stats.performance>0 &&
+stats.pf>=1.15 &&
+positive>=Math.ceil(total*0.5)
+)
+return "🟡 Interessant";
+
+return "🔴 Schwach";
+
+}
+
+function show(prefix,s,positive,total){
+
+$(prefix+"Trades").textContent=s.trades;
+
+$(prefix+"Win").textContent=
+s.winRate.toFixed(1)+"%";
+
+$(prefix+"Perf").textContent=
+(s.performance>=0?"+":"")+
+s.performance.toFixed(2)+"%";
+
+$(prefix+"Perf").className=
+s.performance>=0
+?"good"
+:"bad";
+
+$(prefix+"DD").textContent=
+"-"+s.drawdown.toFixed(2)+"%";
+
+$(prefix+"PF").textContent=
+fmtPF(s.pf);
+
+$(prefix+"Avg").textContent=
+(s.average>=0?"+":"")+
+s.average.toFixed(2)+"%";
+
+$(prefix+"Positive").textContent=
+positive+" / "+total;
+
+$(prefix+"Rating").textContent=
+rating(s,positive,total);
+
+}
+
+function renderWindows(id,arr){
+
+$(id).innerHTML=
+arr.map(
+(s,i)=>
+
+"<tr>"+
+"<td>"+(i+1)+"</td>"+
+"<td>"+s.trades+"</td>"+
+"<td>"+s.winRate.toFixed(1)+"%</td>"+
+"<td>"+
+(s.performance>=0?"+":"")+
+s.performance.toFixed(2)+"%</td>"+
+"<td>"+fmtPF(s.pf)+"</td>"+
+"<td>-"+s.drawdown.toFixed(2)+"%</td>"+
+"</tr>"
+
+).join("");
+
+}
+
+function decide(bo,mr,boPos,mrPos,windows){
+
+let title="🔴 Keine Strategie überzeugt";
+
+let text=
+"Weder Breakout noch Mean Reversion zeigen bisher einen ausreichend stabilen Vorteil.";
+
+const boGood=
+bo.performance>0 &&
+bo.pf>=1.2 &&
+boPos>=Math.ceil(windows*0.75);
+
+const mrGood=
+mr.performance>0 &&
+mr.pf>=1.2 &&
+mrPos>=Math.ceil(windows*0.75);
+
+if(boGood&&!mrGood){
+
+title="🚀 Breakout gewinnt";
+
+text=
+"Breakout zeigt über die unabhängigen Zeitfenster die robusteren Ergebnisse.";
+
+}
+
+else if(mrGood&&!boGood){
+
+title="↩️ Mean Reversion gewinnt";
+
+text=
+"Mean Reversion zeigt über die unabhängigen Zeitfenster die robusteren Ergebnisse.";
+
+}
+
+else if(boGood&&mrGood){
+
+if(bo.pf>mr.pf){
+
+title="🚀 Breakout gewinnt knapp";
+
+text=
+"Beide Ansätze sind interessant, Breakout hat aber den höheren Profit-Faktor.";
+
+}else{
+
+title="↩️ Mean Reversion gewinnt knapp";
+
+text=
+"Beide Ansätze sind interessant, Mean Reversion hat aber den höheren Profit-Faktor.";
+
+}
+
+}
+
+$("winner").textContent=title;
+
+$("winnerText").textContent=text;
+
+}
+
+async function run(){
+
+const button=$("run");
+
+button.disabled=true;
+
+try{
+
+const symbol=$("symbol").value;
+
+const interval=$("interval").value;
+
+const days=Number($("days").value);
+
+const windows=Number($("windows").value);
+
+const fee=Number($("fee").value);
+
+const risk=Number($("risk").value);
+
+const now=Date.now();
+
+const start=
+now-
+days*24*60*60*1000;
+
+const warmup=
+start-
+60*24*60*60*1000;
+
+const data=
+await loadHistory(
+symbol,
+interval,
+warmup,
+now
+);
+
+if(data.length<300)
+throw new Error("Nicht genügend historische Daten.");
+
+const ind=indicators(data);
+
+let first=0;
+
+for(let i=0;i<data.length;i++){
+
+if(Number(data[i][6])>=start){
+
+first=i;
+break;
+
+}
+
+}
+
+const usable=
+ind.close.length-first;
+
+const size=
+Math.floor(usable/windows);
+
+const boResults=[];
+const mrResults=[];
+
+for(let w=0;w<windows;w++){
+
+$("status").textContent=
+"Fenster "+
+(w+1)+
+" / "+
+windows+
+" wird getestet…";
+
+const s=
+first+w*size;
+
+const e=
+w===windows-1
+?ind.close.length-1
+:s+size;
+
+boResults.push(
+runStrategy(
+ind,
+s,
+e,
+fee,
+risk,
+"BREAKOUT"
+)
+);
+
+mrResults.push(
+runStrategy(
+ind,
+s,
+e,
+fee,
+risk,
+"MEAN"
+)
+);
+
+}
+
+const boStatsWindows=
+boResults.map(stats);
+
+const mrStatsWindows=
+mrResults.map(stats);
+
+const boCombined=
+stats(combine(boResults));
+
+const mrCombined=
+stats(combine(mrResults));
+
+const boPositive=
+boStatsWindows.filter(
+x=>x.performance>0
+).length;
+
+const mrPositive=
+mrStatsWindows.filter(
+x=>x.performance>0
+).length;
+
+show(
+"bo",
+boCombined,
+boPositive,
+windows
+);
+
+show(
+"mr",
+mrCombined,
+mrPositive,
+windows
+);
+
+renderWindows(
+"boWindows",
+boStatsWindows
+);
+
+renderWindows(
+"mrWindows",
+mrStatsWindows
+);
+
+decide(
+boCombined,
+mrCombined,
+boPositive,
+mrPositive,
+windows
+);
+
+$("status").textContent=
+"V6 abgeschlossen · "+
+windows+
+" Zeitfenster · zwei Strategien getestet.";
+
+}catch(error){
+
+$("status").textContent=
+"Fehler: "+
+error.message;
+
+}
+
+button.disabled=false;
+
+}
+
+$("run").addEventListener(
+"click",
+run
+);
+
+</script>
+
+</body>
+</html>
