@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V1 vs V2</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;background:#080c13;color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+main{max-width:800px;margin:auto;padding:18px 14px 50px}
+a{color:#9fb4d4;text-decoration:none}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#78869c}
+h1{margin:5px 0 6px;font-size:30px}
+h2{margin:0 0 12px}
+.small{color:#8997ad;font-size:13px;line-height:1.5}
+.card{
+background:#101722;border:1px solid #202b3b;border-radius:18px;
+padding:16px;margin-top:14px
+}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:#8997ad}
+select{
+display:block;width:100%;margin-top:6px;padding:12px;
+background:#0b111a;color:white;border:1px solid #293548;
+border-radius:11px;font-size:15px
+}
+button{
+grid-column:1/-1;padding:14px;border:0;border-radius:12px;
+background:white;color:#080c13;font-weight:900;font-size:15px
+}
+button:disabled{opacity:.5}
+#status{margin-top:12px;color:#8997ad;font-size:12px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.version h2{text-align:center}
+.metric{
+display:flex;justify-content:space-between;align-items:center;
+border-bottom:1px solid #202b3b;padding:10px 0
+}
+.metric span{color:#8997ad;font-size:13px}
+.metric b{font-size:16px}
+.good{color:#70e5b7}
+.bad{color:#ff899a}
+.warn{color:#ffd27a}
+.rating{
+margin-top:12px;padding:12px;border-radius:12px;
+background:#0b111a;text-align:center;font-weight:800
+}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 5px;border-bottom:1px solid #202b3b;text-align:right}
+th:first-child,td:first-child{text-align:left}
+.warning{
+margin-top:14px;border:1px solid #574a2a;background:#17150e;
+border-radius:18px;padding:15px;color:#aaa084;font-size:12px;line-height:1.5
+}
+@media(max-width:620px){
+.compare{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<a href="backtest.html">← Alter Backtest</a>
+
+<div style="margin-top:18px">
+<div class="eyebrow">STRATEGY COMPARISON</div>
+<h1>SafeSignal V1 vs V2</h1>
+<div class="small">
+Der gleiche historische Markt wird mit beiden Strategien getestet.
+So sehen wir, ob die zusätzlichen Risikofilter tatsächlich helfen.
+</div>
+</div>
+
+<section class="card controls">
+
+<label>
+Coin
+<select id="symbol">
+<option value="BTCUSDT">Bitcoin (BTC)</option>
+<option value="ETHUSDT">Ethereum (ETH)</option>
+<option value="SOLUSDT">Solana (SOL)</option>
+<option value="BNBUSDT">BNB</option>
+<option value="XRPUSDT">XRP</option>
+<option value="DOGEUSDT">Dogecoin</option>
+</select>
+</label>
+
+<label>
+Trading-Zeitraum
+<select id="interval">
+<option value="15m">15 Minuten</option>
+<option value="1h" selected>1 Stunde</option>
+<option value="4h">4 Stunden</option>
+</select>
+</label>
+
+<label>
+Testzeitraum
+<select id="days">
+<option value="90">90 Tage</option>
+<option value="180">6 Monate</option>
+<option value="365" selected>1 Jahr</option>
+<option value="730">2 Jahre</option>
+</select>
+</label>
+
+<label>
+Gebühr pro Order
+<select id="fee">
+<option value="0">0 %</option>
+<option value="0.0005">0,05 %</option>
+<option value="0.001" selected>0,10 %</option>
+<option value="0.0015">0,15 %</option>
+</select>
+</label>
+
+<button id="run">V1 GEGEN V2 TESTEN</button>
+</section>
+
+<div id="status">Bereit.</div>
+
+<div class="compare">
+
+<section class="card version">
+<h2>SafeSignal V1</h2>
+
+<div class="metric"><span>Trades</span><b id="v1Trades">—</b></div>
+<div class="metric"><span>Trefferquote</span><b id="v1Win">—</b></div>
+<div class="metric"><span>Performance</span><b id="v1Perf">—</b></div>
+<div class="metric"><span>Max. Drawdown</span><b id="v1DD">—</b></div>
+<div class="metric"><span>Profit-Faktor</span><b id="v1PF">—</b></div>
+<div class="metric"><span>Ø Trade</span><b id="v1Avg">—</b></div>
+<div class="metric"><span>Long Trades</span><b id="v1Long">—</b></div>
+<div class="metric"><span>Short Trades</span><b id="v1Short">—</b></div>
+
+<div class="rating" id="v1Rating">Noch kein Test</div>
+</section>
+
+<section class="card version">
+<h2>SafeSignal V2</h2>
+
+<div class="metric"><span>Trades</span><b id="v2Trades">—</b></div>
+<div class="metric"><span>Trefferquote</span><b id="v2Win">—</b></div>
+<div class="metric"><span>Performance</span><b id="v2Perf">—</b></div>
+<div class="metric"><span>Max. Drawdown</span><b id="v2DD">—</b></div>
+<div class="metric"><span>Profit-Faktor</span><b id="v2PF">—</b></div>
+<div class="metric"><span>Ø Trade</span><b id="v2Avg">—</b></div>
+<div class="metric"><span>Long Trades</span><b id="v2Long">—</b></div>
+<div class="metric"><span>Short Trades</span><b id="v2Short">—</b></div>
+
+<div class="rating" id="v2Rating">Noch kein Test</div>
+</section>
+
+</div>
+
+<section class="card">
+<h2>Was V2 zusätzlich verlangt</h2>
+<ul class="small">
+<li>Trend muss auch im übergeordneten 4-Stunden-Chart bestätigt sein.</li>
+<li>ADX muss mindestens 22 betragen.</li>
+<li>Volumen muss mindestens 20 % über dem Durchschnitt liegen.</li>
+<li>Der Preis muss genügend Abstand zur EMA200 haben.</li>
+<li>Nach einem Stop-Loss folgt ein Cooldown, bevor ein neuer Trade erlaubt ist.</li>
+<li>RSI darf nicht in einer extrem überkauften oder überverkauften Zone liegen.</li>
+</ul>
+</section>
+
+<section class="card">
+<h2>V2 – letzte Trades</h2>
+
+<div style="overflow:auto">
+<table>
+<thead>
+<tr>
+<th>Typ</th>
+<th>Ergebnis</th>
+<th>Rendite</th>
+</tr>
+</thead>
+<tbody id="tradesV2">
+<tr><td colspan="3">Noch keine Daten</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="warning">
+<b>⚠️ Wichtig</b><br><br>
+Ein Backtest ist keine Garantie für zukünftige Gewinne. Auch eine gute V2
+wird Verlusttrades haben. Die Software führt keinerlei echte Orders aus.
+Bei Kerzen, in denen Stop-Loss und Take-Profit gleichzeitig erreichbar
+gewesen wären, wird konservativ der Stop-Loss zuerst angenommen.
+</section>
+
+</main>
+
+<script>
+const API="https://api.binance.com/api/v3";
+const $=id=>document.getElementById(id);
+
+function ema(v,p){
+const r=Array(v.length).fill(null);
+if(v.length<p)return r;
+let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p;
+r[p-1]=e;
+const k=2/(p+1);
+for(let i=p;i<v.length;i++){
+e=v[i]*k+e*(1-k);
+r[i]=e;
+}
+return r;
+}
+
+function rsi(v,p=14){
+const r=Array(v.length).fill(null);
+let g=0,l=0;
+
+for(let i=1;i<=p;i++){
+let d=v[i]-v[i-1];
+g+=Math.max(d,0);
+l+=Math.max(-d,0);
+}
+
+let ag=g/p,al=l/p;
+r[p]=al===0?100:100-100/(1+ag/al);
+
+for(let i=p+1;i<v.length;i++){
+let d=v[i]-v[i-1];
+ag=(ag*(p-1)+Math.max(d,0))/p;
+al=(al*(p-1)+Math.max(-d,0))/p;
+r[i]=al===0?100:100-100/(1+ag/al);
+}
+return r;
+}
+
+function atr(h,l,c,p=14){
+const r=Array(c.length).fill(null);
+const tr=Array(c.length).fill(null);
+
+for(let i=1;i<c.length;i++){
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+}
+
+let a=0;
+for(let i=1;i<=p;i++)a+=tr[i];
+a/=p;
+r[p]=a;
+
+for(let i=p+1;i<c.length;i++){
+a=(a*(p-1)+tr[i])/p;
+r[i]=a;
+}
+return r;
+}
+
+function adx(h,l,c,p=14){
+const len=c.length;
+const tr=Array(len).fill(null);
+const plusDM=Array(len).fill(0);
+const minusDM=Array(len).fill(0);
+const result=Array(len).fill(null);
+
+for(let i=1;i<len;i++){
+const up=h[i]-h[i-1];
+const down=l[i-1]-l[i];
+
+plusDM[i]=(up>down&&up>0)?up:0;
+minusDM[i]=(down>up&&down>0)?down:0;
+
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+}
+
+let trS=0,pS=0,mS=0;
+
+for(let i=1;i<=p;i++){
+trS+=tr[i];
+pS+=plusDM[i];
+mS+=minusDM[i];
+}
+
+const dx=Array(len).fill(null);
+
+for(let i=p;i<len;i++){
+
+if(i>p){
+trS=trS-trS/p+tr[i];
+pS=pS-pS/p+plusDM[i];
+mS=mS-mS/p+minusDM[i];
+}
+
+const plusDI=trS===0?0:100*pS/trS;
+const minusDI=trS===0?0:100*mS/trS;
+
+dx[i]=(plusDI+minusDI===0)
+?0
+:100*Math.abs(plusDI-minusDI)/(plusDI+minusDI);
+}
+
+let first=0,count=0;
+
+for(let i=p;i<len&&count<p;i++){
+if(dx[i]!==null){
+first+=dx[i];
+count++;
+}
+}
+
+if(count<p)return result;
+
+let current=first/p;
+const start=p+count-1;
+result[start]=current;
+
+for(let i=start+1;i<len;i++){
+current=(current*(p-1)+dx[i])/p;
+result[i]=current;
+}
+
+return result;
+}
+
+function indicators(data){
+const close=data.map(x=>Number(x[4]));
+const high=data.map(x=>Number(x[2]));
+const low=data.map(x=>Number(x[3]));
+const volume=data.map(x=>Number(x[5]));
+const time=data.map(x=>Number(x[0]));
+
+const e20=ema(close,20);
+const e50=ema(close,50);
+const e200=ema(close,200);
+const rs=rsi(close);
+const at=atr(high,low,close);
+const ax=adx(high,low,close);
+
+const e12=ema(close,12);
+const e26=ema(close,26);
+
+const macd=Array(close.length).fill(null);
+
+for(let i=26;i<close.length;i++){
+if(e12[i]!==null&&e26[i]!==null)
+macd[i]=e12[i]-e26[i];
+}
+
+const macdClean=[];
+const map=[];
+
+for(let i=0;i<macd.length;i++){
+if(macd[i]!==null){
+macdClean.push(macd[i]);
+map.push(i);
+}
+}
+
+const sigClean=ema(macdClean,9);
+const signal=Array(close.length).fill(null);
+
+for(let i=0;i<sigClean.length;i++){
+signal[map[i]]=sigClean[i];
+}
+
+return{
+close,high,low,volume,time,
+e20,e50,e200,rs,at,ax,
+macd,signal
+};
+}
+
+function volumeRatio(i,ind){
+if(i<20)return 0;
+
+let avg=0;
+
+for(let x=i-20;x<i;x++)
+avg+=ind.volume[x];
+
+avg/=20;
+
+return avg===0?0:ind.volume[i]/avg;
+}
+
+function baseSignal(i,ind){
+
+if(i<200)return {signal:"WARTEN",score:0};
+
+const p=ind.close[i];
+const R=ind.rs[i];
+const A=ind.at[i];
+const M=ind.macd[i];
+const MS=ind.signal[i];
+
+if(
+R===null||A===null||
+M===null||MS===null
+)return {signal:"WARTEN",score:0};
+
+const bullTrend=
+p>ind.e20[i] &&
+ind.e20[i]>ind.e50[i] &&
+ind.e50[i]>ind.e200[i];
+
+const bearTrend=
+p<ind.e20[i] &&
+ind.e20[i]<ind.e50[i] &&
+ind.e50[i]<ind.e200[i];
+
+let bull=0,bear=0;
+
+if(bullTrend)bull+=35;
+if(bearTrend)bear+=35;
+
+if(M>MS)bull+=20;
+else bear+=20;
+
+if(R>=50&&R<=65)bull+=20;
+if(R<=50&&R>=35)bear+=20;
+
+const vr=volumeRatio(i,ind);
+
+if(vr>=1.10){
+bull+=10;
+bear+=10;
+}
+
+if(A/p>0.035)
+return {signal:"WARTEN",score:0,atr:A};
+
+let signal="WARTEN";
+
+if(
+bull>=75 &&
+bull-bear>=25 &&
+R<70
+)signal="KAUFEN";
+
+else if(
+bear>=75 &&
+bear-bull>=25 &&
+R>30
+)signal="VERKAUFEN";
+
+if(R>=70||R<=30)
+signal="WARTEN";
+
+return{
+signal,
+score:Math.max(bull,bear),
+atr:A
+};
+}
+
+function findHigherIndex(time,higher){
+
+let lo=0;
+let hi=higher.time.length-1;
+let best=-1;
+
+while(lo<=hi){
+
+const mid=Math.floor((lo+hi)/2);
+
+if(higher.time[mid]<=time){
+best=mid;
+lo=mid+1;
+}else{
+hi=mid-1;
+}
+}
+
+return best;
+}
+
+function v2Signal(i,ind,higher){
+
+const base=baseSignal(i,ind);
+
+if(base.signal==="WARTEN")
+return base;
+
+const p=ind.close[i];
+const R=ind.rs[i];
+const AX=ind.ax[i];
+const vr=volumeRatio(i,ind);
+
+if(AX===null||AX<22)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+if(vr<1.20)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+const distance=
+Math.abs(p-ind.e200[i])/p;
+
+if(distance<0.01)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+if(base.signal==="KAUFEN"&&(R<52||R>64))
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+if(base.signal==="VERKAUFEN"&&(R>48||R<36))
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+const hi=findHigherIndex(
+ind.time[i],
+higher
+);
+
+if(hi<200)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+const hp=higher.close[hi];
+
+const higherBull=
+hp>higher.e20[hi] &&
+higher.e20[hi]>higher.e50[hi] &&
+higher.e50[hi]>higher.e200[hi];
+
+const higherBear=
+hp<higher.e20[hi] &&
+higher.e20[hi]<higher.e50[hi] &&
+higher.e50[hi]<higher.e200[hi];
+
+if(
+base.signal==="KAUFEN" &&
+!higherBull
+)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+if(
+base.signal==="VERKAUFEN" &&
+!higherBear
+)
+return {signal:"WARTEN",score:0,atr:base.atr};
+
+return{
+signal:base.signal,
+score:base.score,
+atr:base.atr
+};
+}
+
+async function loadHistory(symbol,interval,start,end){
+
+let cursor=start;
+const all=[];
+
+while(cursor<end){
+
+$("status").textContent=
+"Daten werden geladen: "+
+all.length+" Kerzen";
+
+const url=
+API+
+"/klines?symbol="+symbol+
+"&interval="+interval+
+"&startTime="+cursor+
+"&endTime="+end+
+"&limit=1000";
+
+const res=await fetch(url);
+
+if(!res.ok)
+throw new Error("Binance-Daten konnten nicht geladen werden.");
+
+const batch=await res.json();
+
+if(!batch.length)break;
+
+all.push(...batch);
+
+cursor=Number(batch[batch.length-1][0])+1;
+
+if(batch.length<1000)break;
+
+await new Promise(r=>setTimeout(r,80));
+}
+
+return all;
+}
+
+function runStrategy(
+data,
+higher,
+fee,
+version,
+targetStart
+){
+
+const ind=indicators(data);
+
+let equity=100;
+let peak=100;
+let maxDD=0;
+
+let position=null;
+let cooldownUntil=-1;
+
+const trades=[];
+
+for(let i=200;i<data.length-1;i++){
+
+if(ind.time[i]<targetStart)
+continue;
+
+if(position){
+
+const high=Number(data[i][2]);
+const low=Number(data[i][3]);
+
+let exit=null;
+let reason=null;
+
+if(position.type==="LONG"){
+
+if(low<=position.stop){
+exit=position.stop;
+reason="Stop-Loss";
+}
+
+else if(high>=position.tp){
+exit=position.tp;
+reason="Take-Profit";
+}
+
+}else{
+
+if(high>=position.stop){
+exit=position.stop;
+reason="Stop-Loss";
+}
+
+else if(low<=position.tp){
+exit=position.tp;
+reason="Take-Profit";
+}
+}
+
+if(exit!==null){
+
+let raw;
+
+if(position.type==="LONG")
+raw=(exit-position.entry)/position.entry;
+else
+raw=(position.entry-exit)/position.entry;
+
+const net=raw-fee*2;
+
+equity*=1+net;
+
+if(equity>peak)peak=equity;
+
+const dd=(peak-equity)/peak;
+if(dd>maxDD)maxDD=dd;
+
+trades.push({
+type:position.type,
+result:reason,
+return:net
+});
+
+if(
+version===2 &&
+reason==="Stop-Loss"
+)
+cooldownUntil=i+12;
+
+position=null;
+}
+
+continue;
+}
+
+if(version===2 && i<cooldownUntil)
+continue;
+
+let s;
+
+if(version===1)
+s=baseSignal(i,ind);
+else
+s=v2Signal(i,ind,higher);
+
+if(s.signal==="WARTEN")
+continue;
+
+const entry=Number(data[i+1][1]);
+const A=s.atr;
+
+if(!A)continue;
+
+if(s.signal==="KAUFEN"){
+
+position={
+type:"LONG",
+entry,
+stop:entry-1.5*A,
+tp:entry+3*A
+};
+
+}else{
+
+position={
+type:"SHORT",
+entry,
+stop:entry+1.5*A,
+tp:entry-3*A
+};
+}
+}
+
+return{
+trades,
+equity,
+maxDD
+};
+}
+
+function stats(result){
+
+const t=result.trades;
+
+const wins=t.filter(x=>x.return>0);
+const losses=t.filter(x=>x.return<=0);
+
+const grossWin=wins.reduce((s,x)=>s+x.return,0);
+const grossLoss=Math.abs(
+losses.reduce((s,x)=>s+x.return,0)
+);
+
+return{
+trades:t.length,
+winRate:t.length?wins.length/t.length*100:0,
+performance:result.equity-100,
+drawdown:result.maxDD*100,
+pf:grossLoss?grossWin/grossLoss:(grossWin>0?Infinity:0),
+avg:t.length?t.reduce((s,x)=>s+x.return,0)/t.length*100:0,
+longs:t.filter(x=>x.type==="LONG").length,
+shorts:t.filter(x=>x.type==="SHORT").length
+};
+}
+
+function formatPF(x){
+return x===Infinity?"∞":x.toFixed(2);
+}
+
+function setResult(prefix,s){
+
+$(prefix+"Trades").textContent=s.trades;
+$(prefix+"Win").textContent=s.winRate.toFixed(1)+"%";
+$(prefix+"Perf").textContent=
+(s.performance>=0?"+":"")+s.performance.toFixed(2)+"%";
+$(prefix+"DD").textContent="-"+s.drawdown.toFixed(2)+"%";
+$(prefix+"PF").textContent=formatPF(s.pf);
+$(prefix+"Avg").textContent=
+(s.avg>=0?"+":"")+s.avg.toFixed(2)+"%";
+$(prefix+"Long").textContent=s.longs;
+$(prefix+"Short").textContent=s.shorts;
+
+$(prefix+"Perf").className=
+s.performance>0?"good":"bad";
+
+let rating="🔴 Schwach";
+
+if(s.trades<20)
+rating="⚠️ Zu wenig Trades";
+
+else if(
+s.performance>0 &&
+s.pf>=1.5 &&
+s.drawdown<15
+)
+rating="🟢 Stark";
+
+else if(
+s.performance>0 &&
+s.pf>1
+)
+rating="🟡 Positiv";
+
+$(prefix+"Rating").textContent=rating;
+}
+
+function showTrades(trades){
+
+const list=
+trades.slice(-15).reverse();
+
+$("tradesV2").innerHTML=
+list.length
+?
+list.map(t=>
+"<tr>"+
+"<td>"+t.type+"</td>"+
+"<td>"+t.result+"</td>"+
+"<td>"+
+(t.return>=0?"+":"")+
+(t.return*100).toFixed(2)+
+"%</td>"+
+"</tr>"
+).join("")
+:
+"<tr><td colspan='3'>Keine Trades</td></tr>";
+}
+
+async function start(){
+
+const button=$("run");
+button.disabled=true;
+
+try{
+
+const symbol=$("symbol").value;
+const interval=$("interval").value;
+const days=Number($("days").value);
+const fee=Number($("fee").value);
+
+const now=Date.now();
+const targetStart=
+now-days*24*60*60*1000;
+
+/*
+Zusätzliche Historie für EMA200.
+*/
+const warmupStart=
+targetStart-60*24*60*60*1000;
+
+$("status").textContent=
+"1h/Trading-Daten werden geladen…";
+
+const data=
+await loadHistory(
+symbol,
+interval,
+warmupStart,
+now
+);
+
+$("status").textContent=
+"4-Stunden-Trenddaten werden geladen…";
+
+const higher=
+indicators(
+await loadHistory(
+symbol,
+"4h",
+warmupStart-
+40*24*60*60*1000,
+now
+)
+);
+
+$("status").textContent=
+"V1 wird getestet…";
+
+const v1=
+runStrategy(
+data,
+higher,
+fee,
+1,
+targetStart
+);
+
+$("status").textContent=
+"V2 wird getestet…";
+
+const v2=
+runStrategy(
+data,
+higher,
+fee,
+2,
+targetStart
+);
+
+const s1=stats(v1);
+const s2=stats(v2);
+
+setResult("v1",s1);
+setResult("v2",s2);
+
+showTrades(v2.trades);
+
+$("status").textContent=
+"Vergleich abgeschlossen · "+
+data.length+
+" Kerzen analysiert.";
+
+}catch(e){
+
+$("status").textContent=
+"Fehler: "+e.message;
+
+}
+
+button.disabled=false;
+}
+
+$("run").addEventListener(
+"click",
+start
+);
+</script>
+
+</body>
+</html>
