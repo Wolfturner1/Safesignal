@@ -1,0 +1,43 @@
+name: SafeSignal V11 Paper Trading
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  paper-trading:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Repository laden
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: SafeSignal prüfen
+        run: node paper-engine.js
+
+      - name: Paper-Daten speichern
+        run: |
+          git config user.name "SafeSignal Bot"
+          git config user.email "actions@github.com"
+
+          git add paper-state.json
+
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen."
+          else
+            git commit -m "V11 Paper Trading Update"
+            git push
+          fi
