@@ -1,0 +1,3137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V7 Audit</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:#080c13;
+color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+main{
+max-width:1000px;
+margin:auto;
+padding:18px 14px 50px
+}
+
+a{
+color:#9fb4d4;
+text-decoration:none
+}
+
+.eyebrow{
+font-size:11px;
+letter-spacing:2px;
+color:#78869c
+}
+
+h1{
+margin:5px 0;
+font-size:31px
+}
+
+h2{
+margin:0 0 12px
+}
+
+.subtitle{
+color:#8997ad;
+font-size:13px;
+line-height:1.5
+}
+
+.card{
+background:#101722;
+border:1px solid #202b3b;
+border-radius:18px;
+padding:16px;
+margin-top:14px
+}
+
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px
+}
+
+label{
+font-size:12px;
+color:#8997ad
+}
+
+select{
+display:block;
+width:100%;
+margin-top:6px;
+padding:12px;
+background:#0b111a;
+color:white;
+border:1px solid #293548;
+border-radius:11px;
+font-size:15px
+}
+
+button{
+grid-column:1/-1;
+padding:14px;
+border:0;
+border-radius:12px;
+background:white;
+color:#080c13;
+font-weight:900;
+font-size:15px
+}
+
+button:disabled{
+opacity:.5
+}
+
+#status{
+margin:12px 3px;
+font-size:12px;
+color:#8997ad
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px
+}
+
+.metric{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:10px 0;
+border-bottom:1px solid #202b3b
+}
+
+.metric:last-child{
+border-bottom:0
+}
+
+.metric span{
+color:#8997ad;
+font-size:13px
+}
+
+.metric strong{
+text-align:right
+}
+
+.good{
+color:#70e5b7
+}
+
+.bad{
+color:#ff899a
+}
+
+.warn{
+color:#ffd27a
+}
+
+.rating{
+padding:15px;
+background:#0b111a;
+border-radius:14px;
+text-align:center;
+font-size:20px;
+font-weight:900
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+
+th,td{
+padding:9px 6px;
+border-bottom:1px solid #202b3b;
+text-align:right;
+white-space:nowrap
+}
+
+th:first-child,
+td:first-child{
+text-align:left
+}
+
+.scroll{
+overflow:auto
+}
+
+.warning{
+border:1px solid #574a2a;
+background:#17150e;
+color:#aaa084;
+font-size:12px;
+line-height:1.5
+}
+
+.audit-ok{
+color:#70e5b7
+}
+
+.audit-bad{
+color:#ff899a
+}
+
+@media(max-width:650px){
+
+.controls{
+grid-template-columns:1fr
+}
+
+.grid{
+grid-template-columns:1fr
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">
+← SafeSignal
+</a>
+
+<div style="margin-top:18px">
+
+<div class="eyebrow">
+BACKTEST AUDIT
+</div>
+
+<h1>SafeSignal V7</h1>
+
+<div class="subtitle">
+V7 prüft keine neue Wunderstrategie. Stattdessen wird der Backtest
+mit Gebühren, Slippage, Positionsgröße, konservativer Intrabar-Ausführung,
+Equity-Kurve und Monatsauswertung kontrolliert.
+</div>
+
+</div>
+
+
+<section class="card controls">
+
+<label>
+Coin
+
+<select id="symbol">
+<option value="BTCUSDT">Bitcoin (BTC)</option>
+<option value="ETHUSDT">Ethereum (ETH)</option>
+<option value="SOLUSDT">Solana (SOL)</option>
+<option value="BNBUSDT">BNB</option>
+<option value="XRPUSDT">XRP</option>
+<option value="DOGEUSDT">Dogecoin</option>
+</select>
+
+</label>
+
+
+<label>
+Zeitraum
+
+<select id="interval">
+<option value="15m">15 Minuten</option>
+<option value="1h" selected>1 Stunde</option>
+<option value="4h">4 Stunden</option>
+</select>
+
+</label>
+
+
+<label>
+Testzeitraum
+
+<select id="days">
+<option value="365">1 Jahr</option>
+<option value="730" selected>2 Jahre</option>
+<option value="1095">3 Jahre</option>
+</select>
+
+</label>
+
+
+<label>
+Gebühr pro Order
+
+<select id="fee">
+<option value="0">0 %</option>
+<option value="0.0005">0,05 %</option>
+<option value="0.001" selected>0,10 %</option>
+<option value="0.0015">0,15 %</option>
+</select>
+
+</label>
+
+
+<label>
+Slippage pro Ausführung
+
+<select id="slippage">
+<option value="0">0 %</option>
+<option value="0.00025">0,025 %</option>
+<option value="0.0005" selected>0,05 %</option>
+<option value="0.001">0,10 %</option>
+</select>
+
+</label>
+
+
+<label>
+Risiko pro Trade
+
+<select id="risk">
+<option value="0.005">0,5 %</option>
+<option value="0.01" selected>1,0 %</option>
+<option value="0.015">1,5 %</option>
+</select>
+
+</label>
+
+
+<label>
+Startkapital
+
+<select id="capital">
+<option value="1000">1.000 €</option>
+<option value="5000" selected>5.000 €</option>
+<option value="10000">10.000 €</option>
+</select>
+
+</label>
+
+
+<label>
+Strategie
+
+<select id="strategy">
+<option value="V5" selected>V5 Regime-Strategie</option>
+<option value="BREAKOUT">Breakout / Momentum</option>
+<option value="MEAN">Mean Reversion</option>
+</select>
+
+</label>
+
+
+<button id="run">
+V7 AUDIT STARTEN
+</button>
+
+</section>
+
+
+<div id="status">
+Bereit.
+</div>
+
+
+<section class="card">
+
+<h2>Benchmark</h2>
+
+<div class="metric">
+<span>Buy & Hold</span>
+<strong id="buyHold">—</strong>
+</div>
+
+<div class="metric">
+<span>Strategie</span>
+<strong id="strategyName">—</strong>
+</div>
+
+<div class="metric">
+<span>Markt</span>
+<strong id="market">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Gesamtergebnis</h2>
+
+<div class="grid">
+
+<div>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="trades">—</strong>
+</div>
+
+<div class="metric">
+<span>Gewinner</span>
+<strong id="wins">—</strong>
+</div>
+
+<div class="metric">
+<span>Verlierer</span>
+<strong id="losses">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="winRate">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="profitFactor">—</strong>
+</div>
+
+</div>
+
+
+<div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="performance">—</strong>
+</div>
+
+<div class="metric">
+<span>Endkapital</span>
+<strong id="endCapital">—</strong>
+</div>
+
+<div class="metric">
+<span>Max. Drawdown</span>
+<strong id="drawdown">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="avgTrade">—</strong>
+</div>
+
+<div class="metric">
+<span>Expectancy</span>
+<strong id="expectancy">—</strong>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Kosten-Audit</h2>
+
+<div class="metric">
+<span>Gebühren gesamt</span>
+<strong id="feesTotal">—</strong>
+</div>
+
+<div class="metric">
+<span>Slippage gesamt</span>
+<strong id="slippageTotal">—</strong>
+</div>
+
+<div class="metric">
+<span>Kosten gesamt</span>
+<strong id="costTotal">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance ohne Kosten</span>
+<strong id="grossPerformance">—</strong>
+</div>
+
+<div class="metric">
+<span>Kostenwirkung</span>
+<strong id="costImpact">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Long / Short</h2>
+
+<div class="grid">
+
+<div>
+
+<h3>🟢 Long</h3>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="longTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="longWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="longPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Netto-Ergebnis</span>
+<strong id="longNet">—</strong>
+</div>
+
+</div>
+
+
+<div>
+
+<h3>🔴 Short</h3>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="shortTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="shortWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="shortPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Netto-Ergebnis</span>
+<strong id="shortNet">—</strong>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Monatsauswertung</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Monat</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Ergebnis</th>
+</tr>
+</thead>
+
+<tbody id="months">
+
+<tr>
+<td colspan="4">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Letzte Trades</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Datum</th>
+<th>Typ</th>
+<th>Exit</th>
+<th>Netto</th>
+<th>Kapital</th>
+</tr>
+</thead>
+
+<tbody id="tradeList">
+
+<tr>
+<td colspan="5">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Audit-Prüfungen</h2>
+
+<div class="metric">
+<span>Signal nutzt nur abgeschlossene Kerzen</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>Einstieg erst nächste Kerze</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>SL + TP gleiche Kerze</span>
+<strong>Stop-Loss zuerst</strong>
+</div>
+
+<div class="metric">
+<span>Gebühren berücksichtigt</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>Slippage berücksichtigt</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>Positionsgröße nach Risiko</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>Maximal 100 % Kapital eingesetzt</span>
+<strong class="audit-ok">✓ Ja</strong>
+</div>
+
+<div class="metric">
+<span>Offene Position am Testende</span>
+<strong>Zum letzten Kurs geschlossen</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>V7 Bewertung</h2>
+
+<div class="rating" id="rating">
+Noch kein Test
+</div>
+
+<div class="subtitle"
+id="ratingText"
+style="margin-top:12px;text-align:center">
+
+Der Audit bewertet, ob nach realistischeren Kosten noch ein statistischer Vorteil übrig bleibt.
+
+</div>
+
+</section>
+
+
+<section class="card warning">
+
+<b>⚠️ Wichtig</b>
+
+<br><br>
+
+Auch dieser Backtest kann echte Börsenausführung nicht perfekt simulieren.
+
+Orderbuch-Liquidität, starke Kurslücken, Verzögerungen,
+variable Gebühren und echte Ausführungsqualität können das Ergebnis
+zusätzlich verschlechtern.
+
+V7 führt keinerlei echte Trades aus.
+
+</section>
+
+</main>
+
+
+<script>
+
+const API =
+"https://api.binance.com/api/v3";
+
+const $ =
+id => document.getElementById(id);
+
+
+
+function ema(v,p){
+
+const out =
+Array(v.length).fill(null);
+
+if(v.length<p)
+return out;
+
+let value =
+v.slice(0,p)
+.reduce((a,b)=>a+b,0)
+/p;
+
+out[p-1]=value;
+
+const k =
+2/(p+1);
+
+for(let i=p;i<v.length;i++){
+
+value =
+v[i]*k
++
+value*(1-k);
+
+out[i]=value;
+
+}
+
+return out;
+
+}
+
+
+
+function rsi(v,p=14){
+
+const out =
+Array(v.length).fill(null);
+
+let gain=0;
+let loss=0;
+
+for(let i=1;i<=p;i++){
+
+const d =
+v[i]-v[i-1];
+
+gain += Math.max(d,0);
+
+loss += Math.max(-d,0);
+
+}
+
+let avgGain =
+gain/p;
+
+let avgLoss =
+loss/p;
+
+out[p] =
+avgLoss===0
+?100
+:100-100/(1+avgGain/avgLoss);
+
+for(let i=p+1;i<v.length;i++){
+
+const d =
+v[i]-v[i-1];
+
+avgGain =
+(
+avgGain*(p-1)
++
+Math.max(d,0)
+)
+/p;
+
+avgLoss =
+(
+avgLoss*(p-1)
++
+Math.max(-d,0)
+)
+/p;
+
+out[i] =
+avgLoss===0
+?100
+:100-100/(1+avgGain/avgLoss);
+
+}
+
+return out;
+
+}
+
+
+
+function atr(h,l,c,p=14){
+
+const out =
+Array(c.length).fill(null);
+
+const tr =
+Array(c.length).fill(null);
+
+for(let i=1;i<c.length;i++){
+
+tr[i] =
+Math.max(
+
+h[i]-l[i],
+
+Math.abs(
+h[i]-c[i-1]
+),
+
+Math.abs(
+l[i]-c[i-1]
+)
+
+);
+
+}
+
+let value=0;
+
+for(let i=1;i<=p;i++)
+value += tr[i];
+
+value /= p;
+
+out[p]=value;
+
+for(let i=p+1;i<c.length;i++){
+
+value =
+(
+value*(p-1)
++
+tr[i]
+)
+/p;
+
+out[i]=value;
+
+}
+
+return out;
+
+}
+
+
+
+function adx(h,l,c,p=14){
+
+const n=c.length;
+
+const tr =
+Array(n).fill(0);
+
+const plus =
+Array(n).fill(0);
+
+const minus =
+Array(n).fill(0);
+
+const out =
+Array(n).fill(null);
+
+for(let i=1;i<n;i++){
+
+const up =
+h[i]-h[i-1];
+
+const down =
+l[i-1]-l[i];
+
+plus[i] =
+up>down && up>0
+?up
+:0;
+
+minus[i] =
+down>up && down>0
+?down
+:0;
+
+tr[i] =
+Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let trs=0;
+let ps=0;
+let ms=0;
+
+for(let i=1;i<=p;i++){
+
+trs+=tr[i];
+ps+=plus[i];
+ms+=minus[i];
+
+}
+
+const dx =
+Array(n).fill(null);
+
+for(let i=p;i<n;i++){
+
+if(i>p){
+
+trs =
+trs-trs/p+tr[i];
+
+ps =
+ps-ps/p+plus[i];
+
+ms =
+ms-ms/p+minus[i];
+
+}
+
+const pdi =
+trs===0
+?0
+:100*ps/trs;
+
+const mdi =
+trs===0
+?0
+:100*ms/trs;
+
+dx[i] =
+pdi+mdi===0
+?0
+:100*Math.abs(pdi-mdi)/(pdi+mdi);
+
+}
+
+let sum=0;
+let count=0;
+
+for(let i=p;i<n;i++){
+
+if(dx[i]!==null){
+
+sum+=dx[i];
+count++;
+
+if(count===p)
+break;
+
+}
+
+}
+
+if(count<p)
+return out;
+
+let current =
+sum/p;
+
+const start =
+p+count-1;
+
+out[start]=current;
+
+for(let i=start+1;i<n;i++){
+
+current =
+(
+current*(p-1)
++
+dx[i]
+)
+/p;
+
+out[i]=current;
+
+}
+
+return out;
+
+}
+
+
+
+function indicators(data){
+
+const open =
+data.map(x=>Number(x[1]));
+
+const high =
+data.map(x=>Number(x[2]));
+
+const low =
+data.map(x=>Number(x[3]));
+
+const close =
+data.map(x=>Number(x[4]));
+
+const volume =
+data.map(x=>Number(x[5]));
+
+const openTime =
+data.map(x=>Number(x[0]));
+
+const closeTime =
+data.map(x=>Number(x[6]));
+
+const e20 =
+ema(close,20);
+
+const e50 =
+ema(close,50);
+
+const e200 =
+ema(close,200);
+
+const RS =
+rsi(close);
+
+const ATR =
+atr(high,low,close);
+
+const ADX =
+adx(high,low,close);
+
+const e12 =
+ema(close,12);
+
+const e26 =
+ema(close,26);
+
+const macd =
+Array(close.length).fill(null);
+
+for(let i=26;i<close.length;i++){
+
+if(
+e12[i]!==null &&
+e26[i]!==null
+){
+
+macd[i] =
+e12[i]-e26[i];
+
+}
+
+}
+
+const clean=[];
+const indexMap=[];
+
+for(let i=0;i<macd.length;i++){
+
+if(macd[i]!==null){
+
+clean.push(macd[i]);
+indexMap.push(i);
+
+}
+
+}
+
+const tempSignal =
+ema(clean,9);
+
+const macdSignal =
+Array(close.length).fill(null);
+
+for(let i=0;i<tempSignal.length;i++){
+
+macdSignal[
+indexMap[i]
+]
+=
+tempSignal[i];
+
+}
+
+return{
+
+open,
+high,
+low,
+close,
+volume,
+openTime,
+closeTime,
+
+e20,
+e50,
+e200,
+
+RS,
+ATR,
+ADX,
+
+macd,
+macdSignal
+
+};
+
+}
+
+
+
+function averageVolume(i,ind){
+
+if(i<20)
+return 0;
+
+let total=0;
+
+for(let x=i-20;x<i;x++){
+
+total +=
+ind.volume[x];
+
+}
+
+return total/20;
+
+}
+
+
+
+function highest(i,ind,n){
+
+let value =
+-Infinity;
+
+for(let x=i-n;x<i;x++){
+
+value =
+Math.max(
+value,
+ind.high[x]
+);
+
+}
+
+return value;
+
+}
+
+
+
+function lowest(i,ind,n){
+
+let value =
+Infinity;
+
+for(let x=i-n;x<i;x++){
+
+value =
+Math.min(
+value,
+ind.low[x]
+);
+
+}
+
+return value;
+
+}
+
+
+
+function v5Signal(i,ind){
+
+if(i<200)
+return null;
+
+const price =
+ind.close[i];
+
+const R =
+ind.RS[i];
+
+const A =
+ind.ATR[i];
+
+const AX =
+ind.ADX[i];
+
+const M =
+ind.macd[i];
+
+const MS =
+ind.macdSignal[i];
+
+if(
+R===null ||
+A===null ||
+AX===null ||
+M===null ||
+MS===null
+)
+return null;
+
+let regime="SIDE";
+
+if(
+price>ind.e200[i] &&
+ind.e50[i]>ind.e200[i]
+)
+regime="BULL";
+
+else if(
+price<ind.e200[i] &&
+ind.e50[i]<ind.e200[i]
+)
+regime="BEAR";
+
+if(regime==="SIDE")
+return null;
+
+const avgVol =
+averageVolume(i,ind);
+
+if(avgVol===0)
+return null;
+
+const vr =
+ind.volume[i]/avgVol;
+
+if(
+AX<25 ||
+vr<1.10
+)
+return null;
+
+if(
+
+regime==="BULL" &&
+
+price>ind.e20[i] &&
+
+ind.e20[i]>ind.e50[i] &&
+
+M>MS &&
+
+R>=52 &&
+R<=66
+
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:1.5,
+tp:3
+};
+
+}
+
+if(
+
+regime==="BEAR" &&
+
+price<ind.e20[i] &&
+
+ind.e20[i]<ind.e50[i] &&
+
+M<MS &&
+
+R>=34 &&
+R<=48
+
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:1.5,
+tp:3
+};
+
+}
+
+return null;
+
+}
+
+
+
+function breakoutSignal(i,ind){
+
+if(i<60)
+return null;
+
+const price =
+ind.close[i];
+
+const A =
+ind.ATR[i];
+
+const AX =
+ind.ADX[i];
+
+const avgVol =
+averageVolume(i,ind);
+
+if(
+A===null ||
+AX===null ||
+avgVol===0
+)
+return null;
+
+const vr =
+ind.volume[i]/avgVol;
+
+if(
+AX<22 ||
+vr<1.20
+)
+return null;
+
+const prevHigh =
+highest(i,ind,20);
+
+const prevLow =
+lowest(i,ind,20);
+
+if(
+price>prevHigh &&
+price>ind.e50[i]
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:1.5,
+tp:3
+};
+
+}
+
+if(
+price<prevLow &&
+price<ind.e50[i]
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:1.5,
+tp:3
+};
+
+}
+
+return null;
+
+}
+
+
+
+function meanSignal(i,ind){
+
+if(i<60)
+return null;
+
+const price =
+ind.close[i];
+
+const e20 =
+ind.e20[i];
+
+const R =
+ind.RS[i];
+
+const A =
+ind.ATR[i];
+
+const AX =
+ind.ADX[i];
+
+if(
+e20===null ||
+R===null ||
+A===null ||
+AX===null
+)
+return null;
+
+if(AX>=25)
+return null;
+
+const distance =
+(price-e20)/e20;
+
+if(
+distance<=-0.025 &&
+R<=30
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:1.5,
+tp:1.5
+};
+
+}
+
+if(
+distance>=0.025 &&
+R>=70
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:1.5,
+tp:1.5
+};
+
+}
+
+return null;
+
+}
+
+
+
+function strategySignal(
+strategy,
+i,
+ind
+){
+
+if(strategy==="V5")
+return v5Signal(i,ind);
+
+if(strategy==="BREAKOUT")
+return breakoutSignal(i,ind);
+
+if(strategy==="MEAN")
+return meanSignal(i,ind);
+
+return null;
+
+}
+
+
+
+function applyEntrySlippage(
+price,
+type,
+slippage
+){
+
+if(type==="LONG"){
+
+return price*
+(1+slippage);
+
+}
+
+return price*
+(1-slippage);
+
+}
+
+
+
+function applyExitSlippage(
+price,
+type,
+slippage
+){
+
+if(type==="LONG"){
+
+return price*
+(1-slippage);
+
+}
+
+return price*
+(1+slippage);
+
+}
+
+
+
+function runBacktest(
+data,
+strategy,
+startIndex,
+fee,
+slippage,
+risk,
+initialCapital
+){
+
+const ind =
+indicators(data);
+
+let equity =
+initialCapital;
+
+let grossEquity =
+initialCapital;
+
+let peak =
+initialCapital;
+
+let maxDrawdown=0;
+
+let position=null;
+
+let cooldown=-1;
+
+let totalFees=0;
+let totalSlippage=0;
+
+const trades=[];
+
+
+for(
+let i=Math.max(200,startIndex);
+i<ind.close.length-1;
+i++
+){
+
+
+if(position){
+
+
+const candleHigh =
+ind.high[i];
+
+const candleLow =
+ind.low[i];
+
+let rawExit=null;
+let reason=null;
+
+
+if(
+position.type==="LONG"
+){
+
+if(
+candleLow<=position.stop
+){
+
+rawExit =
+position.stop;
+
+reason =
+"Stop-Loss";
+
+}
+
+else if(
+candleHigh>=position.tp
+){
+
+rawExit =
+position.tp;
+
+reason =
+"Take-Profit";
+
+}
+
+}
+
+
+else{
+
+
+if(
+candleHigh>=position.stop
+){
+
+rawExit =
+position.stop;
+
+reason =
+"Stop-Loss";
+
+}
+
+else if(
+candleLow<=position.tp
+){
+
+rawExit =
+position.tp;
+
+reason =
+"Take-Profit";
+
+}
+
+}
+
+
+
+if(rawExit!==null){
+
+
+const exit =
+applyExitSlippage(
+rawExit,
+position.type,
+slippage
+);
+
+
+let grossTradeReturn;
+
+
+if(
+position.type==="LONG"
+){
+
+grossTradeReturn =
+
+(
+rawExit-
+position.rawEntry
+)
+/position.rawEntry;
+
+}
+
+else{
+
+grossTradeReturn =
+
+(
+position.rawEntry-
+rawExit
+)
+/position.rawEntry;
+
+}
+
+
+
+let netTradeReturn;
+
+
+if(
+position.type==="LONG"
+){
+
+netTradeReturn =
+
+(
+exit-
+position.entry
+)
+/position.entry;
+
+}
+
+else{
+
+netTradeReturn =
+
+(
+position.entry-
+exit
+)
+/position.entry;
+
+}
+
+
+
+const grossAccountReturn =
+grossTradeReturn *
+position.fraction;
+
+
+const tradingReturnBeforeFee =
+netTradeReturn *
+position.fraction;
+
+
+const feeRate =
+fee*2*position.fraction;
+
+
+const accountReturn =
+tradingReturnBeforeFee -
+feeRate;
+
+
+const entrySlipCost =
+Math.abs(
+position.entry-
+position.rawEntry
+)
+/position.rawEntry
+*
+position.fraction;
+
+
+const exitSlipCost =
+Math.abs(
+exit-
+rawExit
+)
+/rawExit
+*
+position.fraction;
+
+
+const slipCost =
+entrySlipCost+
+exitSlipCost;
+
+
+const feeMoney =
+equity*
+feeRate;
+
+
+const slipMoney =
+equity*
+slipCost;
+
+
+totalFees +=
+feeMoney;
+
+
+totalSlippage +=
+slipMoney;
+
+
+grossEquity *=
+1+
+grossAccountReturn;
+
+
+equity *=
+1+
+accountReturn;
+
+
+if(equity>peak)
+peak=equity;
+
+
+const dd =
+(peak-equity)/peak;
+
+
+if(dd>maxDrawdown)
+maxDrawdown=dd;
+
+
+trades.push({
+
+date:
+ind.closeTime[i],
+
+type:
+position.type,
+
+reason,
+
+netReturn:
+accountReturn,
+
+grossReturn:
+grossAccountReturn,
+
+feeMoney,
+
+slipMoney,
+
+equity
+
+});
+
+
+if(reason==="Stop-Loss"){
+
+cooldown =
+i+12;
+
+}
+
+
+position=null;
+
+}
+
+
+continue;
+
+}
+
+
+
+if(i<cooldown)
+continue;
+
+
+const signal =
+strategySignal(
+strategy,
+i,
+ind
+);
+
+
+if(!signal)
+continue;
+
+
+/*
+Signal basiert auf vollständig
+abgeschlossener Kerze i.
+
+Einstieg erst am Open
+der nächsten Kerze.
+*/
+
+
+const rawEntry =
+ind.open[i+1];
+
+
+const entry =
+applyEntrySlippage(
+rawEntry,
+signal.type,
+slippage
+);
+
+
+const A =
+signal.atr;
+
+
+let stop;
+let tp;
+
+
+if(
+signal.type==="LONG"
+){
+
+stop =
+entry-
+signal.sl*A;
+
+tp =
+entry+
+signal.tp*A;
+
+}
+
+else{
+
+stop =
+entry+
+signal.sl*A;
+
+tp =
+entry-
+signal.tp*A;
+
+}
+
+
+const stopDistance =
+Math.abs(
+entry-stop
+)/entry;
+
+
+if(stopDistance<=0)
+continue;
+
+
+/*
+Positionsgröße:
+Risiko / Stop-Distanz.
+
+Maximal 100 % Kapital,
+also kein Hebel.
+*/
+
+
+let fraction =
+risk/
+stopDistance;
+
+
+fraction =
+Math.min(
+fraction,
+1
+);
+
+
+position = {
+
+type:
+signal.type,
+
+rawEntry,
+
+entry,
+
+stop,
+
+tp,
+
+fraction
+
+};
+
+}
+
+
+
+/*
+Offene Position
+am Ende schließen.
+*/
+
+
+if(position){
+
+
+const rawExit =
+ind.close[
+ind.close.length-1
+];
+
+
+const exit =
+applyExitSlippage(
+rawExit,
+position.type,
+slippage
+);
+
+
+let grossTradeReturn;
+let netTradeReturn;
+
+
+if(
+position.type==="LONG"
+){
+
+grossTradeReturn =
+(
+rawExit-
+position.rawEntry
+)
+/position.rawEntry;
+
+
+netTradeReturn =
+(
+exit-
+position.entry
+)
+/position.entry;
+
+}
+
+else{
+
+grossTradeReturn =
+(
+position.rawEntry-
+rawExit
+)
+/position.rawEntry;
+
+
+netTradeReturn =
+(
+position.entry-
+exit
+)
+/position.entry;
+
+}
+
+
+const grossAccountReturn =
+grossTradeReturn*
+position.fraction;
+
+
+const feeRate =
+fee*2*position.fraction;
+
+
+const accountReturn =
+netTradeReturn*
+position.fraction
+-
+feeRate;
+
+
+const entrySlipCost =
+Math.abs(
+position.entry-
+position.rawEntry
+)
+/position.rawEntry
+*
+position.fraction;
+
+
+const exitSlipCost =
+Math.abs(
+exit-
+rawExit
+)
+/rawExit
+*
+position.fraction;
+
+
+const slipCost =
+entrySlipCost+
+exitSlipCost;
+
+
+const feeMoney =
+equity*
+feeRate;
+
+
+const slipMoney =
+equity*
+slipCost;
+
+
+totalFees += feeMoney;
+
+totalSlippage += slipMoney;
+
+
+grossEquity *=
+1+
+grossAccountReturn;
+
+
+equity *=
+1+
+accountReturn;
+
+
+trades.push({
+
+date:
+ind.closeTime[
+ind.closeTime.length-1
+],
+
+type:
+position.type,
+
+reason:
+"Testende",
+
+netReturn:
+accountReturn,
+
+grossReturn:
+grossAccountReturn,
+
+feeMoney,
+
+slipMoney,
+
+equity
+
+});
+
+}
+
+
+return{
+
+trades,
+
+equity,
+
+grossEquity,
+
+initialCapital,
+
+maxDrawdown,
+
+totalFees,
+
+totalSlippage
+
+};
+
+}
+
+
+
+function calculateStats(result){
+
+const trades =
+result.trades;
+
+const winners =
+trades.filter(
+t=>t.netReturn>0
+);
+
+const losers =
+trades.filter(
+t=>t.netReturn<=0
+);
+
+const grossProfit =
+winners.reduce(
+(s,t)=>s+t.netReturn,
+0
+);
+
+const grossLoss =
+Math.abs(
+losers.reduce(
+(s,t)=>s+t.netReturn,
+0
+)
+);
+
+const pf =
+grossLoss>0
+?
+grossProfit/grossLoss
+:
+grossProfit>0
+?
+Infinity
+:
+0;
+
+const performance =
+(
+result.equity/
+result.initialCapital
+-
+1
+)*100;
+
+const grossPerformance =
+(
+result.grossEquity/
+result.initialCapital
+-
+1
+)*100;
+
+const average =
+trades.length
+?
+trades.reduce(
+(s,t)=>s+t.netReturn,
+0
+)
+/trades.length
+*100
+:
+0;
+
+const expectancy =
+trades.length
+?
+(
+(
+winners.length/
+trades.length
+)
+*
+(
+winners.length
+?
+winners.reduce(
+(s,t)=>s+t.netReturn,
+0
+)/winners.length
+:
+0
+)
++
+(
+losers.length/
+trades.length
+)
+*
+(
+losers.length
+?
+losers.reduce(
+(s,t)=>s+t.netReturn,
+0
+)/losers.length
+:
+0
+)
+)*100
+:
+0;
+
+return{
+
+trades:
+trades.length,
+
+wins:
+winners.length,
+
+losses:
+losers.length,
+
+winRate:
+trades.length
+?
+winners.length/
+trades.length
+*100
+:
+0,
+
+pf,
+
+performance,
+
+grossPerformance,
+
+drawdown:
+result.maxDrawdown*100,
+
+average,
+
+expectancy
+
+};
+
+}
+
+
+
+function sideStats(
+trades,
+type
+){
+
+const list =
+trades.filter(
+t=>t.type===type
+);
+
+const wins =
+list.filter(
+t=>t.netReturn>0
+);
+
+const losses =
+list.filter(
+t=>t.netReturn<=0
+);
+
+const gp =
+wins.reduce(
+(s,t)=>s+t.netReturn,
+0
+);
+
+const gl =
+Math.abs(
+losses.reduce(
+(s,t)=>s+t.netReturn,
+0
+)
+);
+
+const pf =
+gl>0
+?
+gp/gl
+:
+gp>0
+?
+Infinity
+:
+0;
+
+return{
+
+trades:
+list.length,
+
+winRate:
+list.length
+?
+wins.length/list.length*100
+:
+0,
+
+pf,
+
+net:
+list.reduce(
+(s,t)=>s+t.netReturn,
+0
+)*100
+
+};
+
+}
+
+
+
+function monthlyStats(
+trades
+){
+
+const months={};
+
+
+for(const trade of trades){
+
+const d =
+new Date(trade.date);
+
+const key =
+d.getFullYear()
++
+"-"
++
+String(
+d.getMonth()+1
+).padStart(2,"0");
+
+
+if(!months[key]){
+
+months[key] = {
+trades:0,
+wins:0,
+result:0
+};
+
+}
+
+
+months[key].trades++;
+
+if(trade.netReturn>0)
+months[key].wins++;
+
+months[key].result +=
+trade.netReturn;
+
+}
+
+
+return Object.entries(months)
+.map(
+([month,v])=>({
+
+month,
+
+trades:v.trades,
+
+winRate:
+v.trades
+?
+v.wins/v.trades*100
+:
+0,
+
+result:
+v.result*100
+
+})
+);
+
+}
+
+
+
+async function loadHistory(
+symbol,
+interval,
+start,
+end
+){
+
+const all=[];
+
+let cursor=start;
+
+
+while(cursor<end){
+
+
+$("status").textContent =
+
+"Daten werden geladen · "
++
+all.length
++
+" Kerzen";
+
+
+const url =
+
+API
++
+"/klines?symbol="
++
+symbol
++
+"&interval="
++
+interval
++
+"&startTime="
++
+cursor
++
+"&endTime="
++
+end
++
+"&limit=1000";
+
+
+const response =
+await fetch(url);
+
+
+if(!response.ok){
+
+throw new Error(
+"Marktdaten konnten nicht geladen werden."
+);
+
+}
+
+
+const batch =
+await response.json();
+
+
+if(!batch.length)
+break;
+
+
+all.push(...batch);
+
+
+cursor =
+Number(
+batch[
+batch.length-1
+][0]
+)
++1;
+
+
+if(batch.length<1000)
+break;
+
+
+await new Promise(
+r=>setTimeout(r,70)
+);
+
+}
+
+
+return all;
+
+}
+
+
+
+function formatPF(value){
+
+return value===Infinity
+?"∞"
+:value.toFixed(2);
+
+}
+
+
+
+function euro(value){
+
+return Number(value)
+.toLocaleString(
+"de-DE",
+{
+style:"currency",
+currency:"EUR",
+maximumFractionDigits:2
+}
+);
+
+}
+
+
+
+function pct(value){
+
+return (
+value>=0
+?"+"
+:""
+)
++
+value.toFixed(2)
++
+"%";
+
+}
+
+
+
+function displayResults(
+result,
+stats
+){
+
+$("trades").textContent =
+stats.trades;
+
+$("wins").textContent =
+stats.wins;
+
+$("losses").textContent =
+stats.losses;
+
+$("winRate").textContent =
+stats.winRate.toFixed(1)
++
+"%";
+
+$("profitFactor").textContent =
+formatPF(stats.pf);
+
+$("performance").textContent =
+pct(stats.performance);
+
+$("performance").className =
+stats.performance>=0
+?"good"
+:"bad";
+
+$("endCapital").textContent =
+euro(result.equity);
+
+$("drawdown").textContent =
+"-"
++
+stats.drawdown.toFixed(2)
++
+"%";
+
+$("avgTrade").textContent =
+pct(stats.average);
+
+$("expectancy").textContent =
+pct(stats.expectancy);
+
+$("feesTotal").textContent =
+euro(result.totalFees);
+
+$("slippageTotal").textContent =
+euro(result.totalSlippage);
+
+$("costTotal").textContent =
+euro(
+result.totalFees+
+result.totalSlippage
+);
+
+$("grossPerformance").textContent =
+pct(
+stats.grossPerformance
+);
+
+$("costImpact").textContent =
+(
+stats.performance-
+stats.grossPerformance
+).toFixed(2)
++
+" %-Pkt.";
+
+}
+
+
+
+function displaySides(
+trades
+){
+
+const long =
+sideStats(
+trades,
+"LONG"
+);
+
+const short =
+sideStats(
+trades,
+"SHORT"
+);
+
+
+$("longTrades").textContent =
+long.trades;
+
+$("longWin").textContent =
+long.winRate.toFixed(1)
++
+"%";
+
+$("longPF").textContent =
+formatPF(long.pf);
+
+$("longNet").textContent =
+pct(long.net);
+
+
+$("shortTrades").textContent =
+short.trades;
+
+$("shortWin").textContent =
+short.winRate.toFixed(1)
++
+"%";
+
+$("shortPF").textContent =
+formatPF(short.pf);
+
+$("shortNet").textContent =
+pct(short.net);
+
+}
+
+
+
+function displayMonths(
+trades
+){
+
+const months =
+monthlyStats(trades);
+
+
+if(!months.length){
+
+$("months").innerHTML =
+"<tr><td colspan='4'>Keine Trades</td></tr>";
+
+return;
+
+}
+
+
+$("months").innerHTML =
+
+months
+.slice()
+.reverse()
+.map(
+m=>
+
+"<tr>"
++
+"<td>"
++
+m.month
++
+"</td>"
++
+"<td>"
++
+m.trades
++
+"</td>"
++
+"<td>"
++
+m.winRate.toFixed(1)
++
+"%</td>"
++
+"<td>"
++
+pct(m.result)
++
+"</td>"
++
+"</tr>"
+
+)
+.join("");
+
+}
+
+
+
+function displayTrades(
+trades
+){
+
+const list =
+trades
+.slice(-20)
+.reverse();
+
+
+if(!list.length){
+
+$("tradeList").innerHTML =
+"<tr><td colspan='5'>Keine Trades</td></tr>";
+
+return;
+
+}
+
+
+$("tradeList").innerHTML =
+
+list.map(
+
+t=>{
+
+const date =
+new Date(t.date)
+.toLocaleDateString(
+"de-DE"
+);
+
+return(
+
+"<tr>"
++
+"<td>"
++
+date
++
+"</td>"
++
+"<td>"
++
+t.type
++
+"</td>"
++
+"<td>"
++
+t.reason
++
+"</td>"
++
+"<td>"
++
+pct(
+t.netReturn*100
+)
++
+"</td>"
++
+"<td>"
++
+euro(t.equity)
++
+"</td>"
++
+"</tr>"
+
+);
+
+}
+
+).join("");
+
+}
+
+
+
+function evaluate(
+stats,
+result
+){
+
+let title;
+let text;
+
+
+if(stats.trades<30){
+
+title =
+"⚠️ Zu wenig Trades";
+
+text =
+"Der Test enthält noch zu wenige Trades für eine robuste Aussage.";
+
+}
+
+else if(
+
+stats.performance>0 &&
+stats.pf>=1.5 &&
+stats.drawdown<15 &&
+stats.expectancy>0
+
+){
+
+title =
+"🟢 Audit bestanden";
+
+text =
+"Auch nach Gebühren und Slippage bleibt ein positiver statistischer Vorteil bestehen. Trotzdem wäre vor echtem Geld noch Paper-Trading notwendig.";
+
+}
+
+else if(
+
+stats.performance>0 &&
+stats.pf>=1.2 &&
+stats.expectancy>0
+
+){
+
+title =
+"🟡 Interessant";
+
+text =
+"Die Strategie bleibt nach realistischeren Kosten positiv, ist aber noch nicht stark genug für belastbares Vertrauen.";
+
+}
+
+else{
+
+title =
+"🔴 Kein belastbarer Edge";
+
+text =
+"Nach Gebühren, Slippage und konservativer Ausführung zeigt die Strategie keinen ausreichend stabilen statistischen Vorteil.";
+
+}
+
+
+$("rating").textContent =
+title;
+
+$("ratingText").textContent =
+text;
+
+}
+
+
+
+async function run(){
+
+const button =
+$("run");
+
+button.disabled=true;
+
+
+try{
+
+
+const symbol =
+$("symbol").value;
+
+const interval =
+$("interval").value;
+
+const days =
+Number(
+$("days").value
+);
+
+const fee =
+Number(
+$("fee").value
+);
+
+const slippage =
+Number(
+$("slippage").value
+);
+
+const risk =
+Number(
+$("risk").value
+);
+
+const capital =
+Number(
+$("capital").value
+);
+
+const strategy =
+$("strategy").value;
+
+
+const strategyNames = {
+
+V5:
+"V5 Regime",
+
+BREAKOUT:
+"Breakout / Momentum",
+
+MEAN:
+"Mean Reversion"
+
+};
+
+
+$("strategyName").textContent =
+strategyNames[strategy];
+
+
+const now =
+Date.now();
+
+
+const start =
+now-
+days*
+24*
+60*
+60*
+1000;
+
+
+const warmup =
+start-
+120*
+24*
+60*
+60*
+1000;
+
+
+const data =
+await loadHistory(
+symbol,
+interval,
+warmup,
+now
+);
+
+
+if(data.length<300){
+
+throw new Error(
+"Nicht genügend historische Daten."
+);
+
+}
+
+
+let firstIndex =
+data.findIndex(
+x=>
+Number(x[6])>=start
+);
+
+
+if(firstIndex<200)
+firstIndex=200;
+
+
+const firstPrice =
+Number(
+data[firstIndex][4]
+);
+
+
+const lastPrice =
+Number(
+data[
+data.length-1
+][4]
+);
+
+
+const buyHold =
+(
+lastPrice/
+firstPrice
+-
+1
+)
+*
+100;
+
+
+$("buyHold").textContent =
+pct(buyHold);
+
+
+$("buyHold").className =
+buyHold>=0
+?"good"
+:"bad";
+
+
+$("market").textContent =
+
+symbol
++
+" · "
++
+interval
++
+" · "
++
+days
++
+" Tage";
+
+
+$("status").textContent =
+"Backtest-Audit läuft…";
+
+
+const result =
+runBacktest(
+
+data,
+
+strategy,
+
+firstIndex,
+
+fee,
+
+slippage,
+
+risk,
+
+capital
+
+);
+
+
+const stats =
+calculateStats(result);
+
+
+displayResults(
+result,
+stats
+);
+
+
+displaySides(
+result.trades
+);
+
+
+displayMonths(
+result.trades
+);
+
+
+displayTrades(
+result.trades
+);
+
+
+evaluate(
+stats,
+result
+);
+
+
+$("status").textContent =
+
+"V7 abgeschlossen · "
++
+result.trades.length
++
+" Trades geprüft.";
+
+
+}
+
+catch(error){
+
+
+$("status").textContent =
+
+"Fehler: "
++
+error.message;
+
+
+}
+
+
+button.disabled=false;
+
+}
+
+
+
+$("run")
+.addEventListener(
+"click",
+run
+);
+
+</script>
+
+</body>
+</html>
