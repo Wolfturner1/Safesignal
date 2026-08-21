@@ -1,0 +1,9 @@
+{
+  "name": "SafeSignal Trading Bot",
+  "short_name": "SafeSignal",
+  "description": "Konservativer Krypto Trading Signal Bot",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080c13",
+  "theme_color": "#080c13"
+}
