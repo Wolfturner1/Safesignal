@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V8</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;background:#080c13;color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+main{max-width:950px;margin:auto;padding:18px 14px 50px}
+a{color:#9fb4d4;text-decoration:none}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#78869c}
+h1{margin:5px 0;font-size:31px}
+h2{margin:0 0 12px}
+.subtitle{color:#8997ad;font-size:13px;line-height:1.5}
+
+.card{
+background:#101722;border:1px solid #202b3b;
+border-radius:18px;padding:16px;margin-top:14px
+}
+
+.controls{
+display:grid;grid-template-columns:1fr 1fr;gap:10px
+}
+
+label{font-size:12px;color:#8997ad}
+
+select{
+display:block;width:100%;margin-top:6px;padding:12px;
+background:#0b111a;color:white;border:1px solid #293548;
+border-radius:11px;font-size:15px
+}
+
+button{
+grid-column:1/-1;padding:14px;border:0;border-radius:12px;
+background:white;color:#080c13;font-weight:900;font-size:15px
+}
+
+button:disabled{opacity:.5}
+
+#status{
+margin:12px 3px;color:#8997ad;font-size:12px
+}
+
+.compare{
+display:grid;grid-template-columns:1fr 1fr;gap:12px
+}
+
+.metric{
+display:flex;justify-content:space-between;gap:12px;
+padding:10px 0;border-bottom:1px solid #202b3b
+}
+
+.metric:last-child{border-bottom:0}
+.metric span{color:#8997ad;font-size:13px}
+.metric strong{text-align:right}
+
+.good{color:#70e5b7}
+.bad{color:#ff899a}
+.warn{color:#ffd27a}
+
+.rating{
+margin-top:12px;background:#0b111a;padding:15px;
+border-radius:14px;text-align:center;font-size:20px;font-weight:900
+}
+
+table{
+width:100%;border-collapse:collapse;font-size:12px
+}
+
+th,td{
+padding:9px 6px;border-bottom:1px solid #202b3b;
+text-align:right;white-space:nowrap
+}
+
+th:first-child,td:first-child{text-align:left}
+
+.scroll{overflow:auto}
+
+.warning{
+border:1px solid #574a2a;background:#17150e;
+color:#aaa084;font-size:12px;line-height:1.5
+}
+
+@media(max-width:700px){
+.controls,.compare{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">← SafeSignal</a>
+
+<div style="margin-top:18px">
+<div class="eyebrow">QUALITY OVER QUANTITY</div>
+
+<h1>SafeSignal V8</h1>
+
+<div class="subtitle">
+V8 sucht nur seltene A-Setups. Die Strategie wird auf einem
+separaten Out-of-Sample-Zeitraum geprüft und bei schwacher
+Robustheit automatisch abgelehnt.
+</div>
+</div>
+
+
+<section class="card controls">
+
+<label>
+Coin
+<select id="symbol">
+<option value="BTCUSDT">Bitcoin (BTC)</option>
+<option value="ETHUSDT">Ethereum (ETH)</option>
+<option value="SOLUSDT">Solana (SOL)</option>
+<option value="BNBUSDT">BNB</option>
+<option value="XRPUSDT">XRP</option>
+<option value="DOGEUSDT">Dogecoin</option>
+</select>
+</label>
+
+
+<label>
+Gesamtzeitraum
+<select id="days">
+<option value="730">2 Jahre</option>
+<option value="1095" selected>3 Jahre</option>
+</select>
+</label>
+
+
+<label>
+Training / Test
+<select id="split">
+<option value="0.60">60 / 40</option>
+<option value="0.70" selected>70 / 30</option>
+<option value="0.80">80 / 20</option>
+</select>
+</label>
+
+
+<label>
+Gebühr pro Order
+<select id="fee">
+<option value="0.0005">0,05 %</option>
+<option value="0.001" selected>0,10 %</option>
+<option value="0.0015">0,15 %</option>
+</select>
+</label>
+
+
+<label>
+Slippage pro Ausführung
+<select id="slippage">
+<option value="0.00025">0,025 %</option>
+<option value="0.0005" selected>0,05 %</option>
+<option value="0.001">0,10 %</option>
+</select>
+</label>
+
+
+<label>
+Risiko pro Trade
+<select id="risk">
+<option value="0.005" selected>0,5 %</option>
+<option value="0.0075">0,75 %</option>
+<option value="0.01">1,0 %</option>
+</select>
+</label>
+
+
+<button id="run">
+V8 QUALITY TEST STARTEN
+</button>
+
+</section>
+
+<div id="status">Bereit.</div>
+
+
+<section class="card">
+
+<h2>V8 Filter</h2>
+
+<div class="metric">
+<span>Übergeordneter Trend</span>
+<strong>1D + 4H</strong>
+</div>
+
+<div class="metric">
+<span>Einstieg</span>
+<strong>1H Pullback</strong>
+</div>
+
+<div class="metric">
+<span>Mindest-ADX</span>
+<strong>22</strong>
+</div>
+
+<div class="metric">
+<span>Mindest-R:R</span>
+<strong>1 : 3</strong>
+</div>
+
+<div class="metric">
+<span>Volumen</span>
+<strong>≥ 1,10×</strong>
+</div>
+
+<div class="metric">
+<span>Cooldown</span>
+<strong>24 Stunden nach SL</strong>
+</div>
+
+</section>
+
+
+<div class="compare">
+
+
+<section class="card">
+
+<h2>Training</h2>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="trainTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="trainWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="trainPerf">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="trainPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Drawdown</span>
+<strong id="trainDD">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="trainAvg">—</strong>
+</div>
+
+<div class="metric">
+<span>Long / Short</span>
+<strong id="trainSides">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Out-of-Sample</h2>
+
+<div class="metric">
+<span>Trades</span>
+<strong id="testTrades">—</strong>
+</div>
+
+<div class="metric">
+<span>Trefferquote</span>
+<strong id="testWin">—</strong>
+</div>
+
+<div class="metric">
+<span>Performance</span>
+<strong id="testPerf">—</strong>
+</div>
+
+<div class="metric">
+<span>Profit-Faktor</span>
+<strong id="testPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Drawdown</span>
+<strong id="testDD">—</strong>
+</div>
+
+<div class="metric">
+<span>Ø Trade</span>
+<strong id="testAvg">—</strong>
+</div>
+
+<div class="metric">
+<span>Long / Short</span>
+<strong id="testSides">—</strong>
+</div>
+
+</section>
+
+</div>
+
+
+<section class="card">
+
+<h2>Benchmark</h2>
+
+<div class="metric">
+<span>Buy & Hold Testzeitraum</span>
+<strong id="hold">—</strong>
+</div>
+
+<div class="metric">
+<span>V8 Testzeitraum</span>
+<strong id="v8Benchmark">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Out-of-Sample Trades</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+<tr>
+<th>Datum</th>
+<th>Typ</th>
+<th>Exit</th>
+<th>Rendite</th>
+</tr>
+</thead>
+
+<tbody id="tradeList">
+
+<tr>
+<td colspan="4">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>V8 Entscheidung</h2>
+
+<div class="rating" id="rating">
+Noch kein Test
+</div>
+
+<div class="subtitle"
+id="ratingText"
+style="text-align:center;margin-top:12px">
+
+Out-of-Sample ist wichtiger als Training.
+
+</div>
+
+</section>
+
+
+<section class="card warning">
+
+<b>⚠️ Forschungsmodus</b>
+
+<br><br>
+
+SafeSignal V8 führt keine echten Orders aus.
+
+Auch ein positiver Out-of-Sample-Test garantiert keine zukünftigen Gewinne.
+Eine Strategie sollte zusätzlich auf mehreren Coins und unterschiedlichen
+Marktphasen geprüft werden, bevor sie überhaupt für Paper-Trading
+verwendet wird.
+
+</section>
+
+</main>
+
+
+<script>
+
+const API="https://api.binance.com/api/v3";
+
+const $=id=>document.getElementById(id);
+
+
+function ema(v,p){
+
+const r=Array(v.length).fill(null);
+
+if(v.length<p)return r;
+
+let e=v.slice(0,p)
+.reduce((a,b)=>a+b,0)/p;
+
+r[p-1]=e;
+
+const k=2/(p+1);
+
+for(let i=p;i<v.length;i++){
+
+e=v[i]*k+e*(1-k);
+
+r[i]=e;
+
+}
+
+return r;
+
+}
+
+
+function rsi(v,p=14){
+
+const r=Array(v.length).fill(null);
+
+let g=0,l=0;
+
+for(let i=1;i<=p;i++){
+
+const d=v[i]-v[i-1];
+
+g+=Math.max(d,0);
+
+l+=Math.max(-d,0);
+
+}
+
+let ag=g/p;
+let al=l/p;
+
+r[p]=al===0
+?100
+:100-100/(1+ag/al);
+
+for(let i=p+1;i<v.length;i++){
+
+const d=v[i]-v[i-1];
+
+ag=
+(
+ag*(p-1)
++
+Math.max(d,0)
+)/p;
+
+al=
+(
+al*(p-1)
++
+Math.max(-d,0)
+)/p;
+
+r[i]=al===0
+?100
+:100-100/(1+ag/al);
+
+}
+
+return r;
+
+}
+
+
+function atr(h,l,c,p=14){
+
+const r=Array(c.length).fill(null);
+
+const tr=Array(c.length).fill(null);
+
+for(let i=1;i<c.length;i++){
+
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let a=0;
+
+for(let i=1;i<=p;i++)
+a+=tr[i];
+
+a/=p;
+
+r[p]=a;
+
+for(let i=p+1;i<c.length;i++){
+
+a=
+(
+a*(p-1)
++
+tr[i]
+)/p;
+
+r[i]=a;
+
+}
+
+return r;
+
+}
+
+
+function adx(h,l,c,p=14){
+
+const n=c.length;
+
+const tr=Array(n).fill(0);
+const plus=Array(n).fill(0);
+const minus=Array(n).fill(0);
+const result=Array(n).fill(null);
+
+for(let i=1;i<n;i++){
+
+const up=h[i]-h[i-1];
+
+const down=l[i-1]-l[i];
+
+plus[i]=(up>down&&up>0)?up:0;
+
+minus[i]=(down>up&&down>0)?down:0;
+
+tr[i]=Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let trs=0,ps=0,ms=0;
+
+for(let i=1;i<=p;i++){
+
+trs+=tr[i];
+ps+=plus[i];
+ms+=minus[i];
+
+}
+
+const dx=Array(n).fill(null);
+
+for(let i=p;i<n;i++){
+
+if(i>p){
+
+trs=trs-trs/p+tr[i];
+ps=ps-ps/p+plus[i];
+ms=ms-ms/p+minus[i];
+
+}
+
+const pdi=
+trs===0?0:100*ps/trs;
+
+const mdi=
+trs===0?0:100*ms/trs;
+
+dx[i]=
+pdi+mdi===0
+?0
+:100*Math.abs(pdi-mdi)/(pdi+mdi);
+
+}
+
+let sum=0,count=0;
+
+for(let i=p;i<n;i++){
+
+if(dx[i]!==null){
+
+sum+=dx[i];
+
+count++;
+
+if(count===p)break;
+
+}
+
+}
+
+if(count<p)return result;
+
+let current=sum/p;
+
+const start=p+count-1;
+
+result[start]=current;
+
+for(let i=start+1;i<n;i++){
+
+current=
+(
+current*(p-1)
++
+dx[i]
+)/p;
+
+result[i]=current;
+
+}
+
+return result;
+
+}
+
+
+function indicators(data){
+
+const open=data.map(x=>Number(x[1]));
+const high=data.map(x=>Number(x[2]));
+const low=data.map(x=>Number(x[3]));
+const close=data.map(x=>Number(x[4]));
+const volume=data.map(x=>Number(x[5]));
+const openTime=data.map(x=>Number(x[0]));
+const closeTime=data.map(x=>Number(x[6]));
+
+return{
+
+open,
+high,
+low,
+close,
+volume,
+openTime,
+closeTime,
+
+ema20:ema(close,20),
+ema50:ema(close,50),
+ema200:ema(close,200),
+
+RSI:rsi(close),
+ATR:atr(high,low,close),
+ADX:adx(high,low,close)
+
+};
+
+}
+
+
+function avgVolume(i,ind){
+
+if(i<20)return 0;
+
+let total=0;
+
+for(let x=i-20;x<i;x++)
+total+=ind.volume[x];
+
+return total/20;
+
+}
+
+
+function latestClosed(time,ind){
+
+let lo=0;
+let hi=ind.closeTime.length-1;
+let best=-1;
+
+while(lo<=hi){
+
+const mid=Math.floor((lo+hi)/2);
+
+if(ind.closeTime[mid]<=time){
+
+best=mid;
+lo=mid+1;
+
+}else{
+
+hi=mid-1;
+
+}
+
+}
+
+return best;
+
+}
+
+
+function higherTrend(index,ind){
+
+if(index<200)
+return "NONE";
+
+const p=ind.close[index];
+
+if(
+p>ind.ema50[index] &&
+ind.ema50[index]>ind.ema200[index]
+)
+return "BULL";
+
+if(
+p<ind.ema50[index] &&
+ind.ema50[index]<ind.ema200[index]
+)
+return "BEAR";
+
+return "NONE";
+
+}
+
+
+function qualitySignal(i,h1,h4,d1){
+
+if(i<200)return null;
+
+const time=h1.closeTime[i];
+
+const i4=latestClosed(time,h4);
+const i1d=latestClosed(time,d1);
+
+if(i4<200||i1d<200)
+return null;
+
+const t4=higherTrend(i4,h4);
+const td=higherTrend(i1d,d1);
+
+if(
+t4==="NONE" ||
+td==="NONE" ||
+t4!==td
+)
+return null;
+
+
+const p=h1.close[i];
+
+const e20=h1.ema20[i];
+const e50=h1.ema50[i];
+
+const R=h1.RSI[i];
+
+const A=h1.ATR[i];
+
+const AX=h1.ADX[i];
+
+if(
+e20===null ||
+e50===null ||
+R===null ||
+A===null ||
+AX===null
+)
+return null;
+
+
+if(AX<22)
+return null;
+
+
+const av=avgVolume(i,h1);
+
+if(av===0)
+return null;
+
+
+const vr=
+h1.volume[i]/av;
+
+
+if(vr<1.10)
+return null;
+
+
+/*
+Keine extrem volatile Kerze.
+*/
+
+const atrPct=A/p;
+
+if(
+atrPct<0.002 ||
+atrPct>0.035
+)
+return null;
+
+
+/*
+Pullback-Logik:
+
+Long:
+übergeordneter Trend bullisch,
+Preis kam nahe EMA20,
+schließt aber wieder oberhalb.
+
+Short entsprechend umgekehrt.
+*/
+
+
+const previousClose=
+h1.close[i-1];
+
+
+const nearEMA=
+Math.abs(
+p-e20
+)/p
+<=0.012;
+
+
+if(
+t4==="BULL" &&
+td==="BULL"
+){
+
+const recovery=
+previousClose<=h1.ema20[i-1]
+&&
+p>e20;
+
+const trend=
+e20>e50 &&
+p>e50;
+
+const momentum=
+R>=52 &&
+R<=65;
+
+if(
+nearEMA &&
+recovery &&
+trend &&
+momentum
+){
+
+return{
+type:"LONG",
+atr:A
+};
+
+}
+
+}
+
+
+if(
+t4==="BEAR" &&
+td==="BEAR"
+){
+
+const recovery=
+previousClose>=h1.ema20[i-1]
+&&
+p<e20;
+
+const trend=
+e20<e50 &&
+p<e50;
+
+const momentum=
+R<=48 &&
+R>=35;
+
+if(
+nearEMA &&
+recovery &&
+trend &&
+momentum
+){
+
+return{
+type:"SHORT",
+atr:A
+};
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+function entryWithSlip(price,type,slip){
+
+return type==="LONG"
+?price*(1+slip)
+:price*(1-slip);
+
+}
+
+
+function exitWithSlip(price,type,slip){
+
+return type==="LONG"
+?price*(1-slip)
+:price*(1+slip);
+
+}
+
+
+function runPeriod(
+h1,
+h4,
+d1,
+start,
+end,
+fee,
+slippage,
+risk
+){
+
+let equity=100;
+
+let peak=100;
+
+let maxDD=0;
+
+let position=null;
+
+let cooldown=-1;
+
+const trades=[];
+
+
+for(
+let i=Math.max(200,start);
+i<Math.min(end,h1.close.length-1);
+i++
+){
+
+
+if(position){
+
+const high=h1.high[i];
+const low=h1.low[i];
+
+let rawExit=null;
+let reason=null;
+
+
+/*
+Konservativ:
+Wenn SL und TP in derselben
+Kerze erreichbar wären,
+wird SL zuerst geprüft.
+*/
+
+
+if(position.type==="LONG"){
+
+if(low<=position.stop){
+
+rawExit=position.stop;
+reason="Stop-Loss";
+
+}else if(high>=position.tp){
+
+rawExit=position.tp;
+reason="Take-Profit";
+
+}
+
+}else{
+
+if(high>=position.stop){
+
+rawExit=position.stop;
+reason="Stop-Loss";
+
+}else if(low<=position.tp){
+
+rawExit=position.tp;
+reason="Take-Profit";
+
+}
+
+}
+
+
+if(rawExit!==null){
+
+const exit=
+exitWithSlip(
+rawExit,
+position.type,
+slippage
+);
+
+
+let tradeReturn;
+
+
+if(position.type==="LONG"){
+
+tradeReturn=
+(exit-position.entry)
+/position.entry;
+
+}else{
+
+tradeReturn=
+(position.entry-exit)
+/position.entry;
+
+}
+
+
+const accountReturn=
+
+tradeReturn
+*
+position.fraction
+
+-
+
+fee
+*
+2
+*
+position.fraction;
+
+
+equity *=
+1+accountReturn;
+
+
+if(equity>peak)
+peak=equity;
+
+
+const dd=
+(peak-equity)/peak;
+
+
+if(dd>maxDD)
+maxDD=dd;
+
+
+trades.push({
+
+time:
+h1.closeTime[i],
+
+type:
+position.type,
+
+reason,
+
+return:
+accountReturn
+
+});
+
+
+if(reason==="Stop-Loss"){
+
+/*
+24 Stunden Cooldown
+im 1h Chart.
+*/
+
+cooldown=i+24;
+
+}
+
+
+position=null;
+
+}
+
+
+continue;
+
+}
+
+
+if(i<cooldown)
+continue;
+
+
+const signal=
+qualitySignal(
+i,
+h1,
+h4,
+d1
+);
+
+
+if(!signal)
+continue;
+
+
+/*
+Signal erst nach Kerzenschluss.
+
+Einstieg nächste 1h-Kerze.
+*/
+
+
+const rawEntry=
+h1.open[i+1];
+
+
+const entry=
+entryWithSlip(
+rawEntry,
+signal.type,
+slippage
+);
+
+
+const A=
+signal.atr;
+
+
+/*
+V8 bewusst groß:
+
+1,5 ATR Stop
+4,5 ATR Ziel = 1:3
+*/
+
+
+let stop;
+let tp;
+
+
+if(signal.type==="LONG"){
+
+stop=
+entry-
+1.5*A;
+
+tp=
+entry+
+4.5*A;
+
+}else{
+
+stop=
+entry+
+1.5*A;
+
+tp=
+entry-
+4.5*A;
+
+}
+
+
+const stopPct=
+Math.abs(
+entry-stop
+)/entry;
+
+
+if(stopPct<=0)
+continue;
+
+
+/*
+Positionsgröße anhand
+des maximalen Kontorisikos.
+
+Kein Hebel:
+maximal 100 % Kapital.
+*/
+
+
+let fraction=
+risk/
+stopPct;
+
+
+fraction=
+Math.min(
+fraction,
+1
+);
+
+
+position={
+
+type:
+signal.type,
+
+entry,
+
+stop,
+
+tp,
+
+fraction
+
+};
+
+}
+
+
+/*
+Offene Position am Testende
+neutral schließen.
+*/
+
+
+if(position){
+
+const rawExit=
+h1.close[
+Math.min(
+end,
+h1.close.length-1
+)
+];
+
+
+const exit=
+exitWithSlip(
+rawExit,
+position.type,
+slippage
+);
+
+
+let r;
+
+
+if(position.type==="LONG"){
+
+r=
+(exit-position.entry)
+/position.entry;
+
+}else{
+
+r=
+(position.entry-exit)
+/position.entry;
+
+}
+
+
+const accountReturn=
+
+r*
+position.fraction
+
+-
+
+fee*
+2*
+position.fraction;
+
+
+equity *=
+1+accountReturn;
+
+
+trades.push({
+
+time:
+h1.closeTime[
+Math.min(
+end,
+h1.closeTime.length-1
+)
+],
+
+type:
+position.type,
+
+reason:
+"Testende",
+
+return:
+accountReturn
+
+});
+
+}
+
+
+return{
+trades,
+equity,
+maxDD
+};
+
+}
+
+
+function stats(result){
+
+const t=result.trades;
+
+const wins=
+t.filter(
+x=>x.return>0
+);
+
+const losses=
+t.filter(
+x=>x.return<=0
+);
+
+
+const gp=
+wins.reduce(
+(s,x)=>s+x.return,
+0
+);
+
+
+const gl=
+Math.abs(
+losses.reduce(
+(s,x)=>s+x.return,
+0
+)
+);
+
+
+const pf=
+gl>0
+?gp/gl
+:gp>0
+?Infinity
+:0;
+
+
+return{
+
+trades:t.length,
+
+winRate:
+t.length
+?
+wins.length/t.length*100
+:
+0,
+
+performance:
+result.equity-100,
+
+drawdown:
+result.maxDD*100,
+
+pf,
+
+average:
+t.length
+?
+t.reduce(
+(s,x)=>s+x.return,
+0
+)
+/t.length*100
+:
+0,
+
+longs:
+t.filter(
+x=>x.type==="LONG"
+).length,
+
+shorts:
+t.filter(
+x=>x.type==="SHORT"
+).length
+
+};
+
+}
+
+
+async function loadHistory(
+symbol,
+interval,
+start,
+end
+){
+
+const all=[];
+
+let cursor=start;
+
+
+while(cursor<end){
+
+$("status").textContent=
+
+interval+
+"-Daten werden geladen · "+
+all.length+
+" Kerzen";
+
+
+const url=
+
+API+
+"/klines?symbol="+
+symbol+
+"&interval="+
+interval+
+"&startTime="+
+cursor+
+"&endTime="+
+end+
+"&limit=1000";
+
+
+const response=
+await fetch(url);
+
+
+if(!response.ok)
+throw new Error(
+"Marktdaten konnten nicht geladen werden."
+);
+
+
+const batch=
+await response.json();
+
+
+if(!batch.length)
+break;
+
+
+all.push(...batch);
+
+
+cursor=
+Number(
+batch[
+batch.length-1
+][0]
+)+1;
+
+
+if(batch.length<1000)
+break;
+
+
+await new Promise(
+r=>setTimeout(r,80)
+);
+
+}
+
+
+return all;
+
+}
+
+
+function pfText(v){
+
+return v===Infinity
+?"∞"
+:v.toFixed(2);
+
+}
+
+
+function percentage(v){
+
+return(
+v>=0
+?"+"
+:""
+)+
+v.toFixed(2)
++"%";
+
+}
+
+
+function show(prefix,s){
+
+$(prefix+"Trades").textContent=
+s.trades;
+
+$(prefix+"Win").textContent=
+s.winRate.toFixed(1)+"%";
+
+$(prefix+"Perf").textContent=
+percentage(s.performance);
+
+$(prefix+"Perf").className=
+s.performance>=0
+?"good"
+:"bad";
+
+$(prefix+"PF").textContent=
+pfText(s.pf);
+
+$(prefix+"DD").textContent=
+"-"+
+s.drawdown.toFixed(2)
++"%";
+
+$(prefix+"Avg").textContent=
+percentage(s.average);
+
+$(prefix+"Sides").textContent=
+s.longs+
+" / "+
+s.shorts;
+
+}
+
+
+function showTrades(trades){
+
+const recent=
+trades
+.slice(-20)
+.reverse();
+
+
+if(!recent.length){
+
+$("tradeList").innerHTML=
+"<tr><td colspan='4'>Keine Trades</td></tr>";
+
+return;
+
+}
+
+
+$("tradeList").innerHTML=
+
+recent.map(
+t=>{
+
+const d=
+new Date(t.time)
+.toLocaleDateString(
+"de-DE"
+);
+
+return(
+
+"<tr>"+
+"<td>"+d+"</td>"+
+"<td>"+t.type+"</td>"+
+"<td>"+t.reason+"</td>"+
+"<td>"+
+percentage(
+t.return*100
+)+
+"</td>"+
+"</tr>"
+
+);
+
+}
+).join("");
+
+}
+
+
+function evaluate(train,test){
+
+let title;
+let text;
+
+
+/*
+Harte V8-Regeln.
+*/
+
+
+if(test.trades<10){
+
+title=
+"⚠️ Zu wenig Out-of-Sample-Trades";
+
+text=
+"V8 ist sehr selektiv, aber dieser Testzeitraum enthält zu wenige unabhängige Trades für eine belastbare Aussage.";
+
+}
+
+
+else if(
+
+test.performance>0 &&
+
+test.pf>=1.50 &&
+
+test.drawdown<=10 &&
+
+test.average>0 &&
+
+train.pf>=1.20
+
+){
+
+title=
+"🟢 V8 besteht den ersten Test";
+
+text=
+"Die Strategie bleibt auch im unbekannten Testzeitraum nach Gebühren und Slippage profitabel. Vor Live-Signalen wären trotzdem weitere Coins und Paper-Trading notwendig.";
+
+}
+
+
+else if(
+
+test.performance>0 &&
+
+test.pf>=1.30 &&
+
+test.drawdown<=15
+
+){
+
+title=
+"🟡 Interessant – weiter testen";
+
+text=
+"V8 erreicht den Mindest-Profit-Faktor im Out-of-Sample-Test, ist aber noch nicht robust genug, um daraus echte Handelssignale abzuleiten.";
+
+}
+
+
+else{
+
+title=
+"🔴 V8 verworfen";
+
+text=
+"Der Out-of-Sample-Profit-Faktor erreicht 1,30 nicht oder die Strategie erzeugt keine ausreichende risikoadjustierte Rendite.";
+
+}
+
+
+$("rating").textContent=
+title;
+
+
+$("ratingText").textContent=
+text;
+
+}
+
+
+async function run(){
+
+const button=
+$("run");
+
+button.disabled=true;
+
+
+try{
+
+
+const symbol=
+$("symbol").value;
+
+
+const days=
+Number(
+$("days").value
+);
+
+
+const split=
+Number(
+$("split").value
+);
+
+
+const fee=
+Number(
+$("fee").value
+);
+
+
+const slippage=
+Number(
+$("slippage").value
+);
+
+
+const risk=
+Number(
+$("risk").value
+);
+
+
+const now=
+Date.now();
+
+
+const targetStart=
+
+now-
+
+days*
+24*
+60*
+60*
+1000;
+
+
+/*
+Warmup für EMA200
+auf allen Timeframes.
+*/
+
+
+const warmup=
+
+targetStart-
+
+300*
+24*
+60*
+60*
+1000;
+
+
+$("status").textContent=
+"1H-Daten werden geladen…";
+
+
+const h1Data=
+await loadHistory(
+symbol,
+"1h",
+warmup,
+now
+);
+
+
+$("status").textContent=
+"4H-Daten werden geladen…";
+
+
+const h4Data=
+await loadHistory(
+symbol,
+"4h",
+warmup-
+200*
+24*
+60*
+60*
+1000,
+now
+);
+
+
+$("status").textContent=
+"1D-Daten werden geladen…";
+
+
+const d1Data=
+await loadHistory(
+symbol,
+"1d",
+warmup-
+500*
+24*
+60*
+60*
+1000,
+now
+);
+
+
+if(
+h1Data.length<500 ||
+h4Data.length<250 ||
+d1Data.length<250
+){
+
+throw new Error(
+"Nicht genügend historische Daten."
+);
+
+}
+
+
+const h1=
+indicators(h1Data);
+
+const h4=
+indicators(h4Data);
+
+const d1=
+indicators(d1Data);
+
+
+let first=
+h1.closeTime.findIndex(
+x=>x>=targetStart
+);
+
+
+if(first<200)
+first=200;
+
+
+const usable=
+h1.close.length-first;
+
+
+const trainSize=
+Math.floor(
+usable*split
+);
+
+
+const trainStart=
+first;
+
+
+const trainEnd=
+first+trainSize;
+
+
+const testStart=
+trainEnd;
+
+
+const testEnd=
+h1.close.length-1;
+
+
+
+$("status").textContent=
+"Training wird getestet…";
+
+
+const training=
+runPeriod(
+h1,
+h4,
+d1,
+trainStart,
+trainEnd,
+fee,
+slippage,
+risk
+);
+
+
+const trainStats=
+stats(training);
+
+
+
+$("status").textContent=
+"Out-of-Sample wird getestet…";
+
+
+const testing=
+runPeriod(
+h1,
+h4,
+d1,
+testStart,
+testEnd,
+fee,
+slippage,
+risk
+);
+
+
+const testStats=
+stats(testing);
+
+
+
+show(
+"train",
+trainStats
+);
+
+
+show(
+"test",
+testStats
+);
+
+
+showTrades(
+testing.trades
+);
+
+
+
+const holdStart=
+h1.close[testStart];
+
+
+const holdEnd=
+h1.close[
+Math.min(
+testEnd,
+h1.close.length-1
+)
+];
+
+
+const hold=
+
+(
+holdEnd/
+holdStart
+-
+1
+)*100;
+
+
+$("hold").textContent=
+percentage(hold);
+
+
+$("hold").className=
+hold>=0
+?"good"
+:"bad";
+
+
+$("v8Benchmark").textContent=
+percentage(
+testStats.performance
+);
+
+
+$("v8Benchmark").className=
+testStats.performance>=0
+?"good"
+:"bad";
+
+
+evaluate(
+trainStats,
+testStats
+);
+
+
+$("status").textContent=
+
+"V8 abgeschlossen · "+
+training.trades.length+
+" Trainingstrades · "+
+testing.trades.length+
+" Out-of-Sample-Trades.";
+
+
+}
+
+catch(error){
+
+$("status").textContent=
+"Fehler: "+
+error.message;
+
+}
+
+
+button.disabled=false;
+
+}
+
+
+$("run")
+.addEventListener(
+"click",
+run
+);
+
+</script>
+
+</body>
+</html>
