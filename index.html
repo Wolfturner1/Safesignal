@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#080c13">
+
+  <title>SafeSignal Trading Bot</title>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+
+<main class="app">
+
+  <header>
+    <div>
+      <div class="eyebrow">TRADING SIGNAL BOT</div>
+      <h1>SafeSignal</h1>
+    </div>
+
+    <button id="refresh" class="refresh">
+      ↻
+    </button>
+  </header>
+
+
+  <section class="card controls">
+
+    <label>
+      Coin
+
+      <select id="symbol">
+        <option value="BTCUSDT">Bitcoin (BTC)</option>
+        <option value="ETHUSDT">Ethereum (ETH)</option>
+        <option value="SOLUSDT">Solana (SOL)</option>
+        <option value="BNBUSDT">BNB</option>
+        <option value="XRPUSDT">XRP</option>
+        <option value="DOGEUSDT">Dogecoin (DOGE)</option>
+        <option value="ADAUSDT">Cardano (ADA)</option>
+        <option value="LINKUSDT">Chainlink (LINK)</option>
+        <option value="LTCUSDT">Litecoin (LTC)</option>
+        <option value="AVAXUSDT">Avalanche (AVAX)</option>
+      </select>
+
+    </label>
+
+
+    <label>
+      Zeitraum
+
+      <select id="interval">
+        <option value="15m">15 Minuten</option>
+        <option value="1h" selected>1 Stunde</option>
+        <option value="4h">4 Stunden</option>
+        <option value="1d">1 Tag</option>
+      </select>
+
+    </label>
+
+
+    <button id="analyze" class="primary">
+      SIGNAL PRÜFEN
+    </button>
+
+  </section>
+
+
+  <div id="status" class="status">
+    Lade Marktdaten...
+  </div>
+
+
+  <section class="card signal">
+
+    <div class="signal-header">
+
+      <div>
+        <span id="badge" class="badge wait">
+          WARTEN
+        </span>
+
+        <h2 id="signal">
+          Analyse läuft...
+        </h2>
+      </div>
+
+
+      <div class="score-box">
+        <strong id="score">—</strong>
+        <span>/100</span>
+      </div>
+
+    </div>
+
+
+    <div class="current-price">
+      <small>Aktueller Kurs</small>
+      <strong id="price">—</strong>
+    </div>
+
+  </section>
+
+
+  <section class="indicator-grid">
+
+    <div class="card indicator">
+      <span>Trend</span>
+      <strong id="trend">—</strong>
+    </div>
+
+    <div class="card indicator">
+      <span>RSI</span>
+      <strong id="rsi">—</strong>
+    </div>
+
+    <div class="card indicator">
+      <span>MACD</span>
+      <strong id="macd">—</strong>
+    </div>
+
+    <div class="card indicator">
+      <span>Volumen</span>
+      <strong id="volume">—</strong>
+    </div>
+
+  </section>
+
+
+  <section class="card">
+
+    <h3>Trading-Plan</h3>
+
+    <div class="level">
+      <span>Einstieg</span>
+      <strong id="entry">—</strong>
+    </div>
+
+    <div class="level">
+      <span>Stop-Loss</span>
+      <strong id="stop">—</strong>
+    </div>
+
+    <div class="level">
+      <span>Take-Profit</span>
+      <strong id="tp">—</strong>
+    </div>
+
+    <div class="level">
+      <span>Chance / Risiko</span>
+      <strong id="rr">—</strong>
+    </div>
+
+  </section>
+
+
+  <section class="card">
+
+    <h3>Warum dieses Signal?</h3>
+
+    <ul id="reasons">
+      <li>Analyse wird durchgeführt...</li>
+    </ul>
+
+  </section>
+
+
+  <section class="risk">
+
+    <strong>⚠️ Sicherheitsmodus aktiv</strong>
+
+    <p>
+      SafeSignal führt niemals selbst Trades aus.
+      Wenn die Analyse nicht eindeutig genug ist,
+      wird automatisch WARTEN angezeigt.
+    </p>
+
+    <p>
+      Trading kann trotzdem zu Verlusten führen.
+      Kein Signal garantiert einen Gewinn.
+    </p>
+
+  </section>
+
+
+  <footer>
+    Öffentliche Binance Spot-Marktdaten<br>
+    Keine Orderfunktion · Keine API-Schlüssel
+  </footer>
+
+</main>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
