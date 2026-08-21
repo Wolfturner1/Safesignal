@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c13">
+<title>SafeSignal V9</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:#080c13;
+color:#eef2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+main{
+max-width:1050px;
+margin:auto;
+padding:18px 14px 50px
+}
+
+a{
+color:#9fb4d4;
+text-decoration:none
+}
+
+.eyebrow{
+font-size:11px;
+letter-spacing:2px;
+color:#78869c
+}
+
+h1{
+margin:5px 0;
+font-size:31px
+}
+
+h2{
+margin:0 0 12px
+}
+
+h3{
+margin-top:0
+}
+
+.subtitle{
+color:#8997ad;
+font-size:13px;
+line-height:1.5
+}
+
+.card{
+background:#101722;
+border:1px solid #202b3b;
+border-radius:18px;
+padding:16px;
+margin-top:14px
+}
+
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px
+}
+
+label{
+font-size:12px;
+color:#8997ad
+}
+
+select{
+display:block;
+width:100%;
+margin-top:6px;
+padding:12px;
+background:#0b111a;
+color:white;
+border:1px solid #293548;
+border-radius:11px;
+font-size:15px
+}
+
+button{
+grid-column:1/-1;
+padding:14px;
+border:0;
+border-radius:12px;
+background:white;
+color:#080c13;
+font-weight:900;
+font-size:15px
+}
+
+button:disabled{
+opacity:.5
+}
+
+#status{
+margin:12px 3px;
+color:#8997ad;
+font-size:12px
+}
+
+.metric{
+display:flex;
+justify-content:space-between;
+gap:12px;
+padding:10px 0;
+border-bottom:1px solid #202b3b
+}
+
+.metric:last-child{
+border-bottom:0
+}
+
+.metric span{
+color:#8997ad;
+font-size:13px
+}
+
+.metric strong{
+text-align:right
+}
+
+.good{color:#70e5b7}
+.bad{color:#ff899a}
+.warn{color:#ffd27a}
+
+.rating{
+background:#0b111a;
+padding:15px;
+border-radius:14px;
+text-align:center;
+font-size:21px;
+font-weight:900
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+
+th,td{
+padding:9px 6px;
+border-bottom:1px solid #202b3b;
+text-align:right;
+white-space:nowrap
+}
+
+th:first-child,
+td:first-child{
+text-align:left
+}
+
+.scroll{
+overflow:auto
+}
+
+.strategyGrid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:12px
+}
+
+.strategy{
+background:#0b111a;
+border-radius:14px;
+padding:14px
+}
+
+.warning{
+border:1px solid #574a2a;
+background:#17150e;
+color:#aaa084;
+font-size:12px;
+line-height:1.5
+}
+
+@media(max-width:760px){
+
+.controls,
+.strategyGrid{
+grid-template-columns:1fr
+}
+
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<a href="index.html">← SafeSignal</a>
+
+<div style="margin-top:18px">
+
+<div class="eyebrow">
+MULTI MARKET ENSEMBLE TEST
+</div>
+
+<h1>SafeSignal V9</h1>
+
+<div class="subtitle">
+V9 prüft mehrere Strategien gleichzeitig auf Bitcoin, Ethereum und Solana.
+Nur Strategien, die auf unterschiedlichen Märkten und in einem separaten
+Holdout-Zeitraum funktionieren, dürfen als Kandidat gelten.
+</div>
+
+</div>
+
+
+<section class="card controls">
+
+<label>
+Gesamtzeitraum
+
+<select id="days">
+
+<option value="730">2 Jahre</option>
+<option value="1095" selected>3 Jahre</option>
+
+</select>
+</label>
+
+
+<label>
+Training / Holdout
+
+<select id="split">
+
+<option value="0.70" selected>
+70 % Training / 30 % Holdout
+</option>
+
+<option value="0.80">
+80 % Training / 20 % Holdout
+</option>
+
+</select>
+</label>
+
+
+<label>
+Gebühr pro Order
+
+<select id="fee">
+
+<option value="0.0005">
+0,05 %
+</option>
+
+<option value="0.001" selected>
+0,10 %
+</option>
+
+<option value="0.0015">
+0,15 %
+</option>
+
+</select>
+</label>
+
+
+<label>
+Slippage
+
+<select id="slippage">
+
+<option value="0.00025">
+0,025 %
+</option>
+
+<option value="0.0005" selected>
+0,05 %
+</option>
+
+<option value="0.001">
+0,10 %
+</option>
+
+</select>
+</label>
+
+
+<label>
+Risiko pro Trade
+
+<select id="risk">
+
+<option value="0.0025">
+0,25 %
+</option>
+
+<option value="0.005" selected>
+0,50 %
+</option>
+
+<option value="0.01">
+1,00 %
+</option>
+
+</select>
+</label>
+
+
+<label>
+Zeitrahmen
+
+<select id="interval">
+
+<option value="1h" selected>
+1 Stunde
+</option>
+
+<option value="4h">
+4 Stunden
+</option>
+
+</select>
+</label>
+
+
+<button id="run">
+V9 ENSEMBLE TEST STARTEN
+</button>
+
+</section>
+
+
+<div id="status">
+Bereit.
+</div>
+
+
+<section class="card">
+
+<h2>Getestete Märkte</h2>
+
+<div class="strategyGrid">
+
+<div class="strategy">
+<h3>₿ Bitcoin</h3>
+<div class="subtitle">BTCUSDT</div>
+</div>
+
+<div class="strategy">
+<h3>◆ Ethereum</h3>
+<div class="subtitle">ETHUSDT</div>
+</div>
+
+<div class="strategy">
+<h3>◎ Solana</h3>
+<div class="subtitle">SOLUSDT</div>
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Strategien</h2>
+
+<div class="strategyGrid">
+
+<div class="strategy">
+
+<h3>A — Trend Pullback</h3>
+
+<div class="subtitle">
+EMA50/200 Trend, Rücksetzer an EMA20,
+RSI-Momentum und ADX.
+</div>
+
+</div>
+
+
+<div class="strategy">
+
+<h3>B — Donchian Breakout</h3>
+
+<div class="subtitle">
+Ausbruch aus dem 40-Kerzen-Bereich
+mit Trend- und Volumenbestätigung.
+</div>
+
+</div>
+
+
+<div class="strategy">
+
+<h3>C — Volatility Expansion</h3>
+
+<div class="subtitle">
+ATR-Ausbruch aus einer ruhigen Phase
+mit Trendbestätigung.
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Trainingsergebnisse</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Strategie</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Perf.</th>
+<th>PF</th>
+<th>DD</th>
+<th>Märkte +</th>
+</tr>
+
+</thead>
+
+<tbody id="trainTable">
+
+<tr>
+<td colspan="7">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Finaler Holdout</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Strategie</th>
+<th>Trades</th>
+<th>Treffer</th>
+<th>Perf.</th>
+<th>PF</th>
+<th>DD</th>
+<th>Märkte +</th>
+</tr>
+
+</thead>
+
+<tbody id="testTable">
+
+<tr>
+<td colspan="7">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Holdout nach Markt</h2>
+
+<div class="scroll">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Strategie</th>
+<th>BTC</th>
+<th>ETH</th>
+<th>SOL</th>
+</tr>
+
+</thead>
+
+<tbody id="marketTable">
+
+<tr>
+<td colspan="4">Noch keine Daten</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>Beste Strategie</h2>
+
+<div class="metric">
+<span>Name</span>
+<strong id="winnerName">—</strong>
+</div>
+
+<div class="metric">
+<span>Holdout Profit-Faktor</span>
+<strong id="winnerPF">—</strong>
+</div>
+
+<div class="metric">
+<span>Holdout Performance</span>
+<strong id="winnerPerf">—</strong>
+</div>
+
+<div class="metric">
+<span>Positive Märkte</span>
+<strong id="winnerMarkets">—</strong>
+</div>
+
+<div class="metric">
+<span>Anzahl Trades</span>
+<strong id="winnerTrades">—</strong>
+</div>
+
+</section>
+
+
+<section class="card">
+
+<h2>V9 Entscheidung</h2>
+
+<div class="rating" id="rating">
+Noch kein Test
+</div>
+
+<div
+class="subtitle"
+id="ratingText"
+style="text-align:center;margin-top:12px">
+
+Der Holdout-Zeitraum entscheidet.
+
+</div>
+
+</section>
+
+
+<section class="card warning">
+
+<b>⚠️ Harte V9-Regel</b>
+
+<br><br>
+
+Eine Strategie wird nur dann als Kandidat betrachtet, wenn sie im
+unangetasteten Holdout mindestens einen Profit-Faktor von 1,30 erreicht,
+positive Performance besitzt und auf mindestens zwei der drei Märkte
+profitabel ist.
+
+Auch dann wäre der nächste Schritt zunächst Paper-Trading und kein
+automatischer Echtgeldhandel.
+
+</section>
+
+</main>
+
+
+<script>
+
+const API =
+"https://api.binance.com/api/v3";
+
+const $ =
+id => document.getElementById(id);
+
+const SYMBOLS =
+["BTCUSDT","ETHUSDT","SOLUSDT"];
+
+
+
+function ema(v,p){
+
+const r =
+Array(v.length).fill(null);
+
+if(v.length<p)
+return r;
+
+let e =
+v.slice(0,p)
+.reduce((a,b)=>a+b,0)
+/p;
+
+r[p-1]=e;
+
+const k =
+2/(p+1);
+
+for(let i=p;i<v.length;i++){
+
+e =
+v[i]*k +
+e*(1-k);
+
+r[i]=e;
+
+}
+
+return r;
+
+}
+
+
+
+function rsi(v,p=14){
+
+const r =
+Array(v.length).fill(null);
+
+let gain=0;
+let loss=0;
+
+for(let i=1;i<=p;i++){
+
+const d =
+v[i]-v[i-1];
+
+gain +=
+Math.max(d,0);
+
+loss +=
+Math.max(-d,0);
+
+}
+
+let avgGain =
+gain/p;
+
+let avgLoss =
+loss/p;
+
+r[p] =
+avgLoss===0
+?100
+:100-100/(1+avgGain/avgLoss);
+
+for(let i=p+1;i<v.length;i++){
+
+const d =
+v[i]-v[i-1];
+
+avgGain =
+(
+avgGain*(p-1)
++
+Math.max(d,0)
+)/p;
+
+avgLoss =
+(
+avgLoss*(p-1)
++
+Math.max(-d,0)
+)/p;
+
+r[i] =
+avgLoss===0
+?100
+:100-100/(1+avgGain/avgLoss);
+
+}
+
+return r;
+
+}
+
+
+
+function atr(h,l,c,p=14){
+
+const out =
+Array(c.length).fill(null);
+
+const tr =
+Array(c.length).fill(null);
+
+for(let i=1;i<c.length;i++){
+
+tr[i] =
+Math.max(
+
+h[i]-l[i],
+
+Math.abs(
+h[i]-c[i-1]
+),
+
+Math.abs(
+l[i]-c[i-1]
+)
+
+);
+
+}
+
+let a=0;
+
+for(let i=1;i<=p;i++)
+a+=tr[i];
+
+a/=p;
+
+out[p]=a;
+
+for(let i=p+1;i<c.length;i++){
+
+a =
+(
+a*(p-1)
++
+tr[i]
+)/p;
+
+out[i]=a;
+
+}
+
+return out;
+
+}
+
+
+
+function adx(h,l,c,p=14){
+
+const n=c.length;
+
+const tr =
+Array(n).fill(0);
+
+const plus =
+Array(n).fill(0);
+
+const minus =
+Array(n).fill(0);
+
+const out =
+Array(n).fill(null);
+
+for(let i=1;i<n;i++){
+
+const up =
+h[i]-h[i-1];
+
+const down =
+l[i-1]-l[i];
+
+plus[i] =
+up>down && up>0
+?up:0;
+
+minus[i] =
+down>up && down>0
+?down:0;
+
+tr[i] =
+Math.max(
+h[i]-l[i],
+Math.abs(h[i]-c[i-1]),
+Math.abs(l[i]-c[i-1])
+);
+
+}
+
+let trs=0;
+let ps=0;
+let ms=0;
+
+for(let i=1;i<=p;i++){
+
+trs+=tr[i];
+ps+=plus[i];
+ms+=minus[i];
+
+}
+
+const dx =
+Array(n).fill(null);
+
+for(let i=p;i<n;i++){
+
+if(i>p){
+
+trs =
+trs-trs/p+tr[i];
+
+ps =
+ps-ps/p+plus[i];
+
+ms =
+ms-ms/p+minus[i];
+
+}
+
+const pdi =
+trs===0
+?0
+:100*ps/trs;
+
+const mdi =
+trs===0
+?0
+:100*ms/trs;
+
+dx[i] =
+pdi+mdi===0
+?0
+:100*
+Math.abs(pdi-mdi)
+/
+(pdi+mdi);
+
+}
+
+let sum=0;
+let count=0;
+
+for(let i=p;i<n;i++){
+
+if(dx[i]!==null){
+
+sum+=dx[i];
+
+count++;
+
+if(count===p)
+break;
+
+}
+
+}
+
+if(count<p)
+return out;
+
+let current =
+sum/p;
+
+const start =
+p+count-1;
+
+out[start]=current;
+
+for(let i=start+1;i<n;i++){
+
+current =
+(
+current*(p-1)
++
+dx[i]
+)/p;
+
+out[i]=current;
+
+}
+
+return out;
+
+}
+
+
+
+function indicators(data){
+
+const open =
+data.map(x=>Number(x[1]));
+
+const high =
+data.map(x=>Number(x[2]));
+
+const low =
+data.map(x=>Number(x[3]));
+
+const close =
+data.map(x=>Number(x[4]));
+
+const volume =
+data.map(x=>Number(x[5]));
+
+const closeTime =
+data.map(x=>Number(x[6]));
+
+return{
+
+open,
+high,
+low,
+close,
+volume,
+closeTime,
+
+ema20:
+ema(close,20),
+
+ema50:
+ema(close,50),
+
+ema200:
+ema(close,200),
+
+RSI:
+rsi(close),
+
+ATR:
+atr(high,low,close),
+
+ADX:
+adx(high,low,close)
+
+};
+
+}
+
+
+
+function avgVolume(i,ind){
+
+if(i<20)
+return 0;
+
+let sum=0;
+
+for(let x=i-20;x<i;x++)
+sum+=ind.volume[x];
+
+return sum/20;
+
+}
+
+
+
+function highest(i,ind,n){
+
+let value=-Infinity;
+
+for(let x=i-n;x<i;x++){
+
+value =
+Math.max(
+value,
+ind.high[x]
+);
+
+}
+
+return value;
+
+}
+
+
+
+function lowest(i,ind,n){
+
+let value=Infinity;
+
+for(let x=i-n;x<i;x++){
+
+value =
+Math.min(
+value,
+ind.low[x]
+);
+
+}
+
+return value;
+
+}
+
+
+
+/*
+==============================
+STRATEGIE A
+TREND PULLBACK
+==============================
+*/
+
+function signalA(i,ind){
+
+if(i<220)
+return null;
+
+const p =
+ind.close[i];
+
+const e20 =
+ind.ema20[i];
+
+const e50 =
+ind.ema50[i];
+
+const e200 =
+ind.ema200[i];
+
+const R =
+ind.RSI[i];
+
+const A =
+ind.ATR[i];
+
+const AX =
+ind.ADX[i];
+
+if(
+e20===null ||
+e50===null ||
+e200===null ||
+R===null ||
+A===null ||
+AX===null
+)
+return null;
+
+
+if(AX<22)
+return null;
+
+
+const prev =
+ind.close[i-1];
+
+
+if(
+
+p>e200 &&
+e50>e200 &&
+e20>e50 &&
+
+prev<=ind.ema20[i-1] &&
+p>e20 &&
+
+R>=52 &&
+R<=65
+
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:1.5,
+tp:4.0
+};
+
+}
+
+
+if(
+
+p<e200 &&
+e50<e200 &&
+e20<e50 &&
+
+prev>=ind.ema20[i-1] &&
+p<e20 &&
+
+R<=48 &&
+R>=35
+
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:1.5,
+tp:4.0
+};
+
+}
+
+
+return null;
+
+}
+
+
+
+/*
+==============================
+STRATEGIE B
+DONCHIAN BREAKOUT
+==============================
+*/
+
+function signalB(i,ind){
+
+if(i<220)
+return null;
+
+const p =
+ind.close[i];
+
+const A =
+ind.ATR[i];
+
+const AX =
+ind.ADX[i];
+
+const e50 =
+ind.ema50[i];
+
+const e200 =
+ind.ema200[i];
+
+if(
+A===null ||
+AX===null ||
+e50===null ||
+e200===null
+)
+return null;
+
+
+if(AX<25)
+return null;
+
+
+const av =
+avgVolume(i,ind);
+
+if(av===0)
+return null;
+
+
+const vr =
+ind.volume[i]/av;
+
+
+if(vr<1.25)
+return null;
+
+
+const top =
+highest(i,ind,40);
+
+const bottom =
+lowest(i,ind,40);
+
+
+if(
+
+p>top &&
+p>e50 &&
+e50>e200
+
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:2.0,
+tp:5.0
+};
+
+}
+
+
+if(
+
+p<bottom &&
+p<e50 &&
+e50<e200
+
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:2.0,
+tp:5.0
+};
+
+}
+
+
+return null;
+
+}
+
+
+
+/*
+==============================
+STRATEGIE C
+VOLATILITY EXPANSION
+==============================
+*/
+
+function signalC(i,ind){
+
+if(i<220)
+return null;
+
+
+const p =
+ind.close[i];
+
+const A =
+ind.ATR[i];
+
+const e50 =
+ind.ema50[i];
+
+const e200 =
+ind.ema200[i];
+
+if(
+A===null ||
+e50===null ||
+e200===null
+)
+return null;
+
+
+const atrPct =
+A/p;
+
+
+let avgATR=0;
+
+
+for(let x=i-20;x<i;x++){
+
+if(ind.ATR[x]===null)
+return null;
+
+avgATR +=
+ind.ATR[x]/
+ind.close[x];
+
+}
+
+
+avgATR /=20;
+
+
+/*
+Nur Expansion nach
+vorher ruhigerer Phase.
+*/
+
+
+if(
+atrPct <
+avgATR*1.30
+)
+return null;
+
+
+const candleMove =
+
+Math.abs(
+ind.close[i]-
+ind.open[i]
+)
+/ind.open[i];
+
+
+if(
+candleMove <
+atrPct*0.70
+)
+return null;
+
+
+if(
+
+ind.close[i] >
+ind.open[i] &&
+
+p>e50 &&
+e50>e200
+
+){
+
+return{
+type:"LONG",
+atr:A,
+sl:1.8,
+tp:4.5
+};
+
+}
+
+
+if(
+
+ind.close[i] <
+ind.open[i] &&
+
+p<e50 &&
+e50<e200
+
+){
+
+return{
+type:"SHORT",
+atr:A,
+sl:1.8,
+tp:4.5
+};
+
+}
+
+
+return null;
+
+}
+
+
+
+function getSignal(
+strategy,
+i,
+ind
+){
+
+if(strategy==="A")
+return signalA(i,ind);
+
+if(strategy==="B")
+return signalB(i,ind);
+
+if(strategy==="C")
+return signalC(i,ind);
+
+return null;
+
+}
+
+
+
+function entrySlip(
+price,
+type,
+slip
+){
+
+return type==="LONG"
+?price*(1+slip)
+:price*(1-slip);
+
+}
+
+
+
+function exitSlip(
+price,
+type,
+slip
+){
+
+return type==="LONG"
+?price*(1-slip)
+:price*(1+slip);
+
+}
+
+
+
+function backtest(
+ind,
+strategy,
+start,
+end,
+fee,
+slippage,
+risk
+){
+
+let equity=100;
+
+let peak=100;
+
+let maxDD=0;
+
+let position=null;
+
+let cooldown=-1;
+
+const trades=[];
+
+
+for(
+let i=Math.max(220,start);
+i<Math.min(end,ind.close.length-1);
+i++
+){
+
+
+if(position){
+
+
+const high =
+ind.high[i];
+
+const low =
+ind.low[i];
+
+
+let rawExit=null;
+
+let reason=null;
+
+
+/*
+Konservative Annahme:
+Stop zuerst.
+*/
+
+
+if(position.type==="LONG"){
+
+if(low<=position.stop){
+
+rawExit =
+position.stop;
+
+reason =
+"SL";
+
+}
+
+else if(high>=position.tp){
+
+rawExit =
+position.tp;
+
+reason =
+"TP";
+
+}
+
+}
+
+
+else{
+
+
+if(high>=position.stop){
+
+rawExit =
+position.stop;
+
+reason =
+"SL";
+
+}
+
+else if(low<=position.tp){
+
+rawExit =
+position.tp;
+
+reason =
+"TP";
+
+}
+
+}
+
+
+
+if(rawExit!==null){
+
+
+const exit =
+exitSlip(
+rawExit,
+position.type,
+slippage
+);
+
+
+let r;
+
+
+if(position.type==="LONG"){
+
+r =
+(exit-position.entry)
+/
+position.entry;
+
+}
+
+else{
+
+r =
+(position.entry-exit)
+/
+position.entry;
+
+}
+
+
+const accountReturn =
+
+r*
+position.fraction
+
+-
+
+fee*
+2*
+position.fraction;
+
+
+equity *=
+1+
+accountReturn;
+
+
+if(equity>peak)
+peak=equity;
+
+
+const dd =
+(
+peak-equity
+)
+/peak;
+
+
+if(dd>maxDD)
+maxDD=dd;
+
+
+trades.push({
+
+return:
+accountReturn,
+
+type:
+position.type,
+
+reason
+
+});
+
+
+if(reason==="SL"){
+
+cooldown =
+i+24;
+
+}
+
+
+position=null;
+
+}
+
+
+continue;
+
+}
+
+
+
+if(i<cooldown)
+continue;
+
+
+
+const signal =
+getSignal(
+strategy,
+i,
+ind
+);
+
+
+if(!signal)
+continue;
+
+
+/*
+Kein Look-ahead:
+Einstieg nächste Kerze.
+*/
+
+
+const entry =
+
+entrySlip(
+ind.open[i+1],
+signal.type,
+slippage
+);
+
+
+const A =
+signal.atr;
+
+
+let stop;
+let tp;
+
+
+if(signal.type==="LONG"){
+
+stop =
+entry-
+signal.sl*A;
+
+tp =
+entry+
+signal.tp*A;
+
+}
+
+else{
+
+stop =
+entry+
+signal.sl*A;
+
+tp =
+entry-
+signal.tp*A;
+
+}
+
+
+const stopPct =
+Math.abs(
+entry-stop
+)/entry;
+
+
+if(stopPct<=0)
+continue;
+
+
+/*
+Kein Hebel.
+*/
+
+
+let fraction =
+risk/
+stopPct;
+
+
+fraction =
+Math.min(
+fraction,
+1
+);
+
+
+position={
+
+type:
+signal.type,
+
+entry,
+
+stop,
+
+tp,
+
+fraction
+
+};
+
+}
+
+
+
+return{
+
+trades,
+equity,
+maxDD
+
+};
+
+}
+
+
+
+function stats(result){
+
+const trades =
+result.trades;
+
+
+const wins =
+trades.filter(
+t=>t.return>0
+);
+
+
+const losses =
+trades.filter(
+t=>t.return<=0
+);
+
+
+const grossProfit =
+wins.reduce(
+(s,t)=>s+t.return,
+0
+);
+
+
+const grossLoss =
+Math.abs(
+losses.reduce(
+(s,t)=>s+t.return,
+0
+)
+);
+
+
+const pf =
+
+grossLoss>0
+
+?
+
+grossProfit/grossLoss
+
+:
+
+grossProfit>0
+
+?
+
+Infinity
+
+:
+
+0;
+
+
+return{
+
+trades:
+trades.length,
+
+
+winRate:
+
+trades.length
+
+?
+
+wins.length/
+trades.length*
+100
+
+:
+
+0,
+
+
+performance:
+
+result.equity-
+100,
+
+
+drawdown:
+
+result.maxDD*
+100,
+
+
+pf
+
+};
+
+}
+
+
+
+async function loadHistory(
+symbol,
+interval,
+start,
+end
+){
+
+const all=[];
+
+let cursor=start;
+
+
+while(cursor<end){
+
+
+$("status").textContent =
+
+symbol+
+" · "+
+interval+
+" · "+
+all.length+
+" Kerzen geladen";
+
+
+const url =
+
+API+
+"/klines?symbol="+
+symbol+
+"&interval="+
+interval+
+"&startTime="+
+cursor+
+"&endTime="+
+end+
+"&limit=1000";
+
+
+const response =
+await fetch(url);
+
+
+if(!response.ok){
+
+throw new Error(
+symbol+
+" konnte nicht geladen werden."
+);
+
+}
+
+
+const batch =
+await response.json();
+
+
+if(!batch.length)
+break;
+
+
+all.push(...batch);
+
+
+cursor =
+
+Number(
+batch[
+batch.length-1
+][0]
+)
++1;
+
+
+if(batch.length<1000)
+break;
+
+
+await new Promise(
+r=>setTimeout(r,70)
+);
+
+}
+
+
+return all;
+
+}
+
+
+
+function combineStats(
+marketStats
+){
+
+const allTrades =
+marketStats.reduce(
+(s,x)=>s+x.trades,
+0
+);
+
+
+let grossGain=0;
+let grossLoss=0;
+
+let wins=0;
+
+let performance=0;
+
+let worstDD=0;
+
+let positiveMarkets=0;
+
+
+for(const s of marketStats){
+
+performance +=
+s.performance;
+
+
+if(s.performance>0)
+positiveMarkets++;
+
+
+if(s.drawdown>worstDD)
+worstDD=s.drawdown;
+
+
+if(
+s.trades>0
+){
+
+wins +=
+s.winRate/
+100*
+s.trades;
+
+}
+
+
+/*
+PF approximieren wir hier
+marktübergreifend über
+gewichtete Gewinn/Verlust-Mengen.
+*/
+
+
+if(
+s.pf!==Infinity &&
+s.pf>0
+){
+
+const unitLoss =
+s.trades/
+(
+1+s.pf
+);
+
+grossLoss +=
+unitLoss;
+
+grossGain +=
+unitLoss*s.pf;
+
+}
+
+}
+
+
+const PF =
+
+grossLoss>0
+
+?
+
+grossGain/grossLoss
+
+:
+
+0;
+
+
+return{
+
+trades:
+allTrades,
+
+winRate:
+
+allTrades
+
+?
+
+wins/allTrades*100
+
+:
+
+0,
+
+performance,
+
+pf:
+PF,
+
+drawdown:
+worstDD,
+
+positiveMarkets
+
+};
+
+}
+
+
+
+function pfText(v){
+
+return v===Infinity
+?"∞"
+:v.toFixed(2);
+
+}
+
+
+
+function pct(v){
+
+return(
+v>=0
+?"+"
+:""
+)+
+v.toFixed(2)
++"%";
+
+}
+
+
+
+function strategyName(code){
+
+if(code==="A")
+return "A · Trend Pullback";
+
+if(code==="B")
+return "B · Donchian Breakout";
+
+return "C · Volatility Expansion";
+
+}
+
+
+
+function tableRow(
+strategy,
+s
+){
+
+return(
+
+"<tr>"+
+
+"<td>"+
+strategyName(strategy)+
+"</td>"+
+
+"<td>"+
+s.trades+
+"</td>"+
+
+"<td>"+
+s.winRate.toFixed(1)+
+"%</td>"+
+
+"<td>"+
+pct(s.performance)+
+"</td>"+
+
+"<td>"+
+pfText(s.pf)+
+"</td>"+
+
+"<td>-"+
+s.drawdown.toFixed(2)+
+"%</td>"+
+
+"<td>"+
+s.positiveMarkets+
+" / 3</td>"+
+
+"</tr>"
+
+);
+
+}
+
+
+
+function marketRow(
+strategy,
+markets
+){
+
+function cell(s){
+
+return(
+pct(s.performance)
++
+" · PF "
++
+pfText(s.pf)
+);
+
+}
+
+
+return(
+
+"<tr>"+
+
+"<td>"+
+strategyName(strategy)+
+"</td>"+
+
+"<td>"+
+cell(markets.BTCUSDT)+
+"</td>"+
+
+"<td>"+
+cell(markets.ETHUSDT)+
+"</td>"+
+
+"<td>"+
+cell(markets.SOLUSDT)+
+"</td>"+
+
+"</tr>"
+
+);
+
+}
+
+
+
+function evaluate(
+training,
+holdout
+){
+
+const strategies =
+["A","B","C"];
+
+
+const candidates =
+strategies.filter(
+s =>
+
+holdout[s].pf>=1.30
+
+&&
+
+holdout[s].performance>0
+
+&&
+
+holdout[s].positiveMarkets>=2
+
+&&
+
+holdout[s].trades>=20
+
+);
+
+
+let winner=null;
+
+
+if(candidates.length){
+
+winner =
+candidates.sort(
+(a,b)=>
+
+holdout[b].pf
+-
+holdout[a].pf
+
+)[0];
+
+}
+
+
+if(!winner){
+
+
+$("winnerName").textContent =
+"Keine";
+
+$("winnerPF").textContent =
+"—";
+
+$("winnerPerf").textContent =
+"—";
+
+$("winnerMarkets").textContent =
+"—";
+
+$("winnerTrades").textContent =
+"—";
+
+
+$("rating").textContent =
+"🔴 Keine robuste Strategie";
+
+
+$("ratingText").textContent =
+"Keine Strategie erreicht im finalen Holdout gleichzeitig PF ≥ 1,30, positive Performance und mindestens zwei profitable Märkte.";
+
+
+return;
+
+}
+
+
+
+const w =
+holdout[winner];
+
+
+$("winnerName").textContent =
+strategyName(winner);
+
+
+$("winnerPF").textContent =
+pfText(w.pf);
+
+
+$("winnerPerf").textContent =
+pct(w.performance);
+
+
+$("winnerMarkets").textContent =
+w.positiveMarkets+
+" / 3";
+
+
+$("winnerTrades").textContent =
+w.trades;
+
+
+
+if(
+
+w.pf>=1.5
+
+&&
+
+w.positiveMarkets===3
+
+&&
+
+training[winner].pf>=1.15
+
+){
+
+$("rating").textContent =
+"🟢 Kandidat für Paper-Trading";
+
+
+$("ratingText").textContent =
+"Die Strategie hat den ersten Multi-Markt-Holdout bestanden. Der nächste Schritt wäre ausschließlich Paper-Trading mit Live-Daten.";
+
+}
+
+
+else{
+
+
+$("rating").textContent =
+"🟡 Interessanter Kandidat";
+
+
+$("ratingText").textContent =
+"Die Strategie erfüllt die Mindestbedingungen, benötigt aber weitere unabhängige Tests, bevor sie für Live-Signale verwendet werden sollte.";
+
+}
+
+}
+
+
+
+async function run(){
+
+const button =
+$("run");
+
+
+button.disabled=true;
+
+
+try{
+
+
+const days =
+Number(
+$("days").value
+);
+
+
+const split =
+Number(
+$("split").value
+);
+
+
+const fee =
+Number(
+$("fee").value
+);
+
+
+const slippage =
+Number(
+$("slippage").value
+);
+
+
+const risk =
+Number(
+$("risk").value
+);
+
+
+const interval =
+$("interval").value;
+
+
+const now =
+Date.now();
+
+
+const start =
+
+now
+
+-
+
+days*
+24*
+60*
+60*
+1000;
+
+
+const warmup =
+
+start
+
+-
+
+300*
+24*
+60*
+60*
+1000;
+
+
+
+const dataBySymbol={};
+
+
+for(const symbol of SYMBOLS){
+
+
+$("status").textContent =
+symbol+
+" wird geladen…";
+
+
+const data =
+await loadHistory(
+symbol,
+interval,
+warmup,
+now
+);
+
+
+if(data.length<500){
+
+throw new Error(
+"Nicht genügend Daten für "+
+symbol
+);
+
+}
+
+
+dataBySymbol[symbol] =
+indicators(data);
+
+}
+
+
+
+const trainMarket={};
+const testMarket={};
+
+
+for(const strategy of ["A","B","C"]){
+
+trainMarket[strategy]={};
+
+testMarket[strategy]={};
+
+
+for(const symbol of SYMBOLS){
+
+
+const ind =
+dataBySymbol[symbol];
+
+
+let first =
+ind.closeTime.findIndex(
+x=>x>=start
+);
+
+
+if(first<220)
+first=220;
+
+
+const usable =
+ind.close.length-first;
+
+
+const trainSize =
+Math.floor(
+usable*split
+);
+
+
+const trainStart =
+first;
+
+
+const trainEnd =
+first+
+trainSize;
+
+
+const testStart =
+trainEnd;
+
+
+const testEnd =
+ind.close.length-1;
+
+
+
+$("status").textContent =
+
+strategyName(strategy)
++
+" · "
++
+symbol
++
+" Training…";
+
+
+const train =
+backtest(
+
+ind,
+
+strategy,
+
+trainStart,
+
+trainEnd,
+
+fee,
+
+slippage,
+
+risk
+
+);
+
+
+$("status").textContent =
+
+strategyName(strategy)
++
+" · "
++
+symbol
++
+" Holdout…";
+
+
+const test =
+backtest(
+
+ind,
+
+strategy,
+
+testStart,
+
+testEnd,
+
+fee,
+
+slippage,
+
+risk
+
+);
+
+
+trainMarket[strategy][symbol] =
+stats(train);
+
+
+testMarket[strategy][symbol] =
+stats(test);
+
+}
+
+}
+
+
+
+const trainCombined={};
+
+const testCombined={};
+
+
+for(const strategy of ["A","B","C"]){
+
+
+trainCombined[strategy] =
+
+combineStats(
+
+SYMBOLS.map(
+s=>
+trainMarket[strategy][s]
+)
+
+);
+
+
+testCombined[strategy] =
+
+combineStats(
+
+SYMBOLS.map(
+s=>
+testMarket[strategy][s]
+)
+
+);
+
+}
+
+
+
+$("trainTable").innerHTML =
+
+["A","B","C"]
+
+.map(
+s=>
+tableRow(
+s,
+trainCombined[s]
+)
+)
+
+.join("");
+
+
+
+$("testTable").innerHTML =
+
+["A","B","C"]
+
+.map(
+s=>
+tableRow(
+s,
+testCombined[s]
+)
+)
+
+.join("");
+
+
+
+$("marketTable").innerHTML =
+
+["A","B","C"]
+
+.map(
+s=>
+marketRow(
+s,
+testMarket[s]
+)
+)
+
+.join("");
+
+
+
+evaluate(
+trainCombined,
+testCombined
+);
+
+
+
+$("status").textContent =
+
+"V9 abgeschlossen · 3 Strategien · 3 Märkte · finaler Holdout getestet.";
+
+
+}
+
+catch(error){
+
+
+$("status").textContent =
+
+"Fehler: "
++
+error.message;
+
+
+}
+
+
+button.disabled=false;
+
+}
+
+
+
+$("run")
+.addEventListener(
+"click",
+run
+);
+
+</script>
+
+</body>
+</html>
