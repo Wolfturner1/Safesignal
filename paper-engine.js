@@ -1,10 +1,20 @@
 const fs = require("fs");
 
-const API = "https://api.binance.com/api/v3";
+const STATE_FILE = "paper-state.json";
+
+const API_ENDPOINTS = [
+  "https://data-api.binance.vision/api/v3",
+  "https://api.binance.com/api/v3"
+];
 
 const FEE = 0.001;
 const SLIPPAGE = 0.0005;
 const RISK = 0.005;
+
+const STOP_ATR = 1.8;
+const TARGET_ATR = 4.5;
+const MIN_EXPANSION = 1.30;
+const MIN_MOMENTUM = 0.70;
 
 const CONFIGS = [
   {
@@ -24,14 +34,14 @@ const CONFIGS = [
   }
 ];
 
-const STATE_FILE = "paper-state.json";
-
 
 function newState() {
+  const now = new Date().toISOString();
+
   return {
-    version: "V11.1",
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
+    version: "V11.2",
+    created: now,
+    updated: now,
     open: [],
     closed: [],
     seenSignals: {},
@@ -41,39 +51,57 @@ function newState() {
 
 
 function loadState() {
-
   try {
-
-    if (fs.existsSync(STATE_FILE)) {
-
-      const raw =
-        fs.readFileSync(
-          STATE_FILE,
-          "utf8"
-        );
-
-      return JSON.parse(raw);
-
+    if (!fs.existsSync(STATE_FILE)) {
+      return newState();
     }
 
-  } catch (e) {
-
-    console.log(
-      "State konnte nicht gelesen werden:",
-      e.message
+    const raw = fs.readFileSync(
+      STATE_FILE,
+      "utf8"
     );
 
+    const state = JSON.parse(raw);
+
+    if (!Array.isArray(state.open)) {
+      state.open = [];
+    }
+
+    if (!Array.isArray(state.closed)) {
+      state.closed = [];
+    }
+
+    if (
+      !state.seenSignals ||
+      typeof state.seenSignals !== "object"
+    ) {
+      state.seenSignals = {};
+    }
+
+    if (
+      !state.markets ||
+      typeof state.markets !== "object"
+    ) {
+      state.markets = {};
+    }
+
+    state.version = "V11.2";
+
+    return state;
+
+  } catch (error) {
+    console.error(
+      "paper-state.json konnte nicht gelesen werden:",
+      error.message
+    );
+
+    return newState();
   }
-
-  return newState();
-
 }
 
 
 function saveState(state) {
-
-  state.updated =
-    new Date().toISOString();
+  state.updated = new Date().toISOString();
 
   fs.writeFileSync(
     STATE_FILE,
@@ -83,33 +111,33 @@ function saveState(state) {
       2
     )
   );
-
 }
 
 
 function ema(values, period) {
-
   const result =
-    Array(values.length).fill(null);
+    new Array(values.length).fill(null);
 
-  if (values.length < period)
+  if (values.length < period) {
     return result;
+  }
 
-  let current =
+  let current = 0;
 
-    values
-      .slice(0, period)
-      .reduce(
-        (a, b) => a + b,
-        0
-      )
-    /
-    period;
+  for (
+    let i = 0;
+    i < period;
+    i++
+  ) {
+    current += values[i];
+  }
+
+  current /= period;
 
   result[period - 1] =
     current;
 
-  const k =
+  const multiplier =
     2 / (period + 1);
 
   for (
@@ -117,19 +145,16 @@ function ema(values, period) {
     i < values.length;
     i++
   ) {
-
     current =
-      values[i] * k
+      values[i] * multiplier
       +
-      current * (1 - k);
+      current * (1 - multiplier);
 
     result[i] =
       current;
-
   }
 
   return result;
-
 }
 
 
@@ -139,36 +164,33 @@ function atr(
   close,
   period = 14
 ) {
-
   const result =
-    Array(close.length).fill(null);
+    new Array(close.length).fill(null);
 
-  const tr =
-    Array(close.length).fill(null);
+  const trueRange =
+    new Array(close.length).fill(null);
 
   for (
     let i = 1;
     i < close.length;
     i++
   ) {
-
-    tr[i] =
+    trueRange[i] =
       Math.max(
-
         high[i] - low[i],
-
         Math.abs(
-          high[i] -
-          close[i - 1]
+          high[i] - close[i - 1]
         ),
-
         Math.abs(
-          low[i] -
-          close[i - 1]
+          low[i] - close[i - 1]
         )
-
       );
+  }
 
+  if (
+    close.length <= period
+  ) {
+    return result;
   }
 
   let current = 0;
@@ -178,9 +200,7 @@ function atr(
     i <= period;
     i++
   ) {
-
-    current += tr[i];
-
+    current += trueRange[i];
   }
 
   current /= period;
@@ -193,82 +213,109 @@ function atr(
     i < close.length;
     i++
   ) {
-
     current =
       (
         current * (period - 1)
         +
-        tr[i]
+        trueRange[i]
       )
       /
       period;
 
     result[i] =
       current;
-
   }
 
   return result;
-
 }
 
 
 function indicators(data) {
-
   const open =
     data.map(
-      x => Number(x[1])
+      row => Number(row[1])
     );
 
   const high =
     data.map(
-      x => Number(x[2])
+      row => Number(row[2])
     );
 
   const low =
     data.map(
-      x => Number(x[3])
+      row => Number(row[3])
     );
 
   const close =
     data.map(
-      x => Number(x[4])
+      row => Number(row[4])
     );
 
   const openTime =
     data.map(
-      x => Number(x[0])
+      row => Number(row[0])
     );
 
   const closeTime =
     data.map(
-      x => Number(x[6])
+      row => Number(row[6])
     );
 
   return {
-
     open,
     high,
     low,
     close,
     openTime,
     closeTime,
-
-    ema50:
-      ema(close, 50),
-
-    ema200:
-      ema(close, 200),
-
-    ATR:
-      atr(
-        high,
-        low,
-        close
-      )
-
+    ema50: ema(close, 50),
+    ema200: ema(close, 200),
+    ATR: atr(
+      high,
+      low,
+      close,
+      14
+    )
   };
+}
 
+
+async function fetchWithTimeout(
+  url,
+  timeoutMs = 15000
+) {
+  const controller =
+    new AbortController();
+
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      timeoutMs
+    );
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          signal:
+            controller.signal,
+
+          headers: {
+            "Accept":
+              "application/json",
+
+            "User-Agent":
+              "SafeSignal-V11.2"
+          }
+        }
+      );
+
+    return response;
+
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 
@@ -277,79 +324,143 @@ async function loadCandles(
   interval,
   limit = 500
 ) {
+  const errors = [];
 
-  const url =
+  for (
+    const endpoint
+    of API_ENDPOINTS
+  ) {
+    const url =
+      endpoint
+      +
+      "/klines?symbol="
+      +
+      encodeURIComponent(symbol)
+      +
+      "&interval="
+      +
+      encodeURIComponent(interval)
+      +
+      "&limit="
+      +
+      limit;
 
-    API
-    +
-    "/klines?symbol="
-    +
-    symbol
-    +
-    "&interval="
-    +
-    interval
-    +
-    "&limit="
-    +
-    limit;
+    try {
+      console.log(
+        "Versuche Marktdaten:",
+        endpoint,
+        symbol,
+        interval
+      );
 
-  const response =
-    await fetch(url);
+      const response =
+        await fetchWithTimeout(url);
 
-  if (!response.ok) {
+      if (!response.ok) {
+        throw new Error(
+          "HTTP "
+          +
+          response.status
+          +
+          " "
+          +
+          response.statusText
+        );
+      }
 
-    throw new Error(
-      symbol +
-      " konnte nicht geladen werden."
-    );
+      const data =
+        await response.json();
 
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "Antwort ist kein Kerzen-Array."
+        );
+      }
+
+      if (data.length < 250) {
+        throw new Error(
+          "Nur "
+          +
+          data.length
+          +
+          " Kerzen erhalten."
+        );
+      }
+
+      console.log(
+        "Marktdaten erfolgreich:",
+        symbol,
+        interval,
+        data.length,
+        "Kerzen"
+      );
+
+      return data;
+
+    } catch (error) {
+      const message =
+        endpoint
+        +
+        ": "
+        +
+        error.message;
+
+      errors.push(message);
+
+      console.error(
+        "Datenquelle fehlgeschlagen:",
+        message
+      );
+    }
   }
 
-  return await response.json();
-
+  throw new Error(
+    "Alle Binance-Datenquellen fehlgeschlagen. "
+    +
+    errors.join(" | ")
+  );
 }
 
 
 function volatilityAnalysis(
-  i,
+  index,
   ind
 ) {
-
-  if (i < 220) {
-
+  if (index < 220) {
     return {
       signal: null,
       reason:
-        "Noch nicht genügend Kerzen."
+        "Noch nicht genügend Kerzen.",
+      expansion: null,
+      moveRatio: null
     };
-
   }
 
   const price =
-    ind.close[i];
+    ind.close[index];
 
   const A =
-    ind.ATR[i];
+    ind.ATR[index];
 
-  const e50 =
-    ind.ema50[i];
+  const ema50 =
+    ind.ema50[index];
 
-  const e200 =
-    ind.ema200[i];
+  const ema200 =
+    ind.ema200[index];
 
   if (
-    A === null ||
-    e50 === null ||
-    e200 === null
+    !Number.isFinite(price) ||
+    !Number.isFinite(A) ||
+    !Number.isFinite(ema50) ||
+    !Number.isFinite(ema200)
   ) {
-
     return {
       signal: null,
       reason:
-        "Indikatoren nicht vollständig."
+        "Indikatoren nicht vollständig.",
+      expansion: null,
+      moveRatio: null
     };
-
   }
 
   const atrPct =
@@ -358,35 +469,33 @@ function volatilityAnalysis(
   let avgATR = 0;
 
   for (
-    let x = i - 20;
-    x < i;
-    x++
+    let i = index - 20;
+    i < index;
+    i++
   ) {
-
     if (
-      ind.ATR[x] === null
+      !Number.isFinite(
+        ind.ATR[i]
+      )
     ) {
-
       return {
         signal: null,
         reason:
-          "ATR-Durchschnitt fehlt."
+          "ATR-Durchschnitt fehlt.",
+        expansion: null,
+        moveRatio: null
       };
-
     }
 
     avgATR +=
-
-      ind.ATR[x]
+      ind.ATR[i]
       /
-      ind.close[x];
-
+      ind.close[i];
   }
 
   avgATR /= 20;
 
   const expansion =
-
     avgATR > 0
       ?
       atrPct / avgATR
@@ -394,16 +503,15 @@ function volatilityAnalysis(
       0;
 
   const candleMove =
-
     Math.abs(
-      ind.close[i] -
-      ind.open[i]
+      ind.close[index]
+      -
+      ind.open[index]
     )
     /
-    ind.open[i];
+    ind.open[index];
 
   const moveRatio =
-
     atrPct > 0
       ?
       candleMove / atrPct
@@ -411,85 +519,76 @@ function volatilityAnalysis(
       0;
 
   const bullishTrend =
-
-    price > e50
+    price > ema50
     &&
-    e50 > e200;
+    ema50 > ema200;
 
   const bearishTrend =
-
-    price < e50
+    price < ema50
     &&
-    e50 < e200;
+    ema50 < ema200;
 
   const bullishCandle =
-
-    ind.close[i]
+    ind.close[index]
     >
-    ind.open[i];
+    ind.open[index];
 
   const bearishCandle =
-
-    ind.close[i]
+    ind.close[index]
     <
-    ind.open[i];
-
+    ind.open[index];
 
   if (
-    expansion < 1.30
+    expansion <
+    MIN_EXPANSION
   ) {
-
     return {
-
       signal: null,
 
       reason:
-
         "ATR Expansion "
         +
         expansion.toFixed(2)
         +
-        "x < 1.30x",
+        "x < "
+        +
+        MIN_EXPANSION.toFixed(2)
+        +
+        "x",
 
       expansion,
       moveRatio
-
     };
-
   }
 
-
   if (
-    moveRatio < 0.70
+    moveRatio <
+    MIN_MOMENTUM
   ) {
-
     return {
-
       signal: null,
 
       reason:
-
         "Kerzen-Momentum "
         +
         moveRatio.toFixed(2)
         +
-        "x ATR < 0.70x",
+        "x ATR < "
+        +
+        MIN_MOMENTUM.toFixed(2)
+        +
+        "x",
 
       expansion,
       moveRatio
-
     };
-
   }
-
 
   if (
     bullishCandle &&
     !bullishTrend
   ) {
-
     return {
-
       signal: null,
 
       reason:
@@ -497,19 +596,14 @@ function volatilityAnalysis(
 
       expansion,
       moveRatio
-
     };
-
   }
-
 
   if (
     bearishCandle &&
     !bearishTrend
   ) {
-
     return {
-
       signal: null,
 
       reason:
@@ -517,19 +611,14 @@ function volatilityAnalysis(
 
       expansion,
       moveRatio
-
     };
-
   }
-
 
   if (
     bullishCandle &&
     bullishTrend
   ) {
-
     return {
-
       signal: {
         type: "LONG",
         atr: A
@@ -540,19 +629,14 @@ function volatilityAnalysis(
 
       expansion,
       moveRatio
-
     };
-
   }
-
 
   if (
     bearishCandle &&
     bearishTrend
   ) {
-
     return {
-
       signal: {
         type: "SHORT",
         atr: A
@@ -563,24 +647,16 @@ function volatilityAnalysis(
 
       expansion,
       moveRatio
-
     };
-
   }
 
-
   return {
-
     signal: null,
-
     reason:
       "Keine eindeutige Richtung.",
-
     expansion,
     moveRatio
-
   };
-
 }
 
 
@@ -588,15 +664,17 @@ function entryWithSlip(
   price,
   type
 ) {
+  if (type === "LONG") {
+    return (
+      price *
+      (1 + SLIPPAGE)
+    );
+  }
 
-  return type === "LONG"
-
-    ?
-    price * (1 + SLIPPAGE)
-
-    :
-    price * (1 - SLIPPAGE);
-
+  return (
+    price *
+    (1 - SLIPPAGE)
+  );
 }
 
 
@@ -604,15 +682,17 @@ function exitWithSlip(
   price,
   type
 ) {
+  if (type === "LONG") {
+    return (
+      price *
+      (1 - SLIPPAGE)
+    );
+  }
 
-  return type === "LONG"
-
-    ?
-    price * (1 - SLIPPAGE)
-
-    :
-    price * (1 + SLIPPAGE);
-
+  return (
+    price *
+    (1 + SLIPPAGE)
+  );
 }
 
 
@@ -623,7 +703,6 @@ function createTrade(
   signalTime,
   entryTime
 ) {
-
   const entry =
     entryWithSlip(
       entryRaw,
@@ -636,29 +715,29 @@ function createTrade(
   if (
     signal.type === "LONG"
   ) {
-
     stop =
-      entry -
-      1.8 * signal.atr;
+      entry
+      -
+      STOP_ATR * signal.atr;
 
     target =
-      entry +
-      4.5 * signal.atr;
+      entry
+      +
+      TARGET_ATR * signal.atr;
 
   } else {
-
     stop =
-      entry +
-      1.8 * signal.atr;
+      entry
+      +
+      STOP_ATR * signal.atr;
 
     target =
-      entry -
-      4.5 * signal.atr;
-
+      entry
+      -
+      TARGET_ATR * signal.atr;
   }
 
   const stopPct =
-
     Math.abs(
       entry - stop
     )
@@ -666,9 +745,15 @@ function createTrade(
     entry;
 
   let fraction =
+    RISK / stopPct;
 
-    RISK /
-    stopPct;
+  if (
+    !Number.isFinite(fraction)
+    ||
+    fraction <= 0
+  ) {
+    fraction = 0;
+  }
 
   fraction =
     Math.min(
@@ -677,9 +762,7 @@ function createTrade(
     );
 
   return {
-
     id:
-
       config.symbol
       +
       "-"
@@ -709,10 +792,17 @@ function createTrade(
 
     target,
 
-    fraction
+    fraction,
 
+    risk:
+      RISK,
+
+    stopATR:
+      STOP_ATR,
+
+    targetATR:
+      TARGET_ATR
   };
-
 }
 
 
@@ -720,20 +810,19 @@ function processTrade(
   trade,
   candles
 ) {
-
   for (
     const candle
     of candles
   ) {
-
     const openTime =
       Number(candle[0]);
 
     if (
       openTime <
       trade.entryTime
-    )
+    ) {
       continue;
+    }
 
     const high =
       Number(candle[2]);
@@ -744,66 +833,63 @@ function processTrade(
     let rawExit = null;
     let reason = null;
 
-
     if (
       trade.type === "LONG"
     ) {
+      const stopHit =
+        low <= trade.stop;
 
-      if (
-        low <= trade.stop
-      ) {
+      const targetHit =
+        high >= trade.target;
 
+      /*
+      Falls Stop und Ziel in derselben
+      Kerze liegen, rechnen wir
+      konservativ: Stop zuerst.
+      */
+
+      if (stopHit) {
         rawExit =
           trade.stop;
 
         reason =
           "Stop-Loss";
 
-      } else if (
-        high >= trade.target
-      ) {
-
+      } else if (targetHit) {
         rawExit =
           trade.target;
 
         reason =
           "Take-Profit";
-
       }
 
     } else {
+      const stopHit =
+        high >= trade.stop;
 
-      if (
-        high >= trade.stop
-      ) {
+      const targetHit =
+        low <= trade.target;
 
+      if (stopHit) {
         rawExit =
           trade.stop;
 
         reason =
           "Stop-Loss";
 
-      } else if (
-        low <= trade.target
-      ) {
-
+      } else if (targetHit) {
         rawExit =
           trade.target;
 
         reason =
           "Take-Profit";
-
       }
-
     }
-
 
     if (
       rawExit !== null
     ) {
-
       const exit =
-
         exitWithSlip(
           rawExit,
           trade.type
@@ -814,9 +900,7 @@ function processTrade(
       if (
         trade.type === "LONG"
       ) {
-
         marketReturn =
-
           (
             exit -
             trade.entry
@@ -825,38 +909,33 @@ function processTrade(
           trade.entry;
 
       } else {
-
         marketReturn =
-
           (
             trade.entry -
             exit
           )
           /
           trade.entry;
-
       }
 
-      const result =
-
-        marketReturn
-        *
-        trade.fraction
-
-        -
-
+      const feeCost =
         FEE
         *
         2
         *
         trade.fraction;
 
-      return {
+      const result =
+        marketReturn
+        *
+        trade.fraction
+        -
+        feeCost;
 
+      return {
         closed: true,
 
         record: {
-
           ...trade,
 
           exit,
@@ -866,21 +945,20 @@ function processTrade(
 
           reason,
 
+          marketReturn,
+
+          feeCost,
+
           return:
             result
-
         }
-
       };
-
     }
-
   }
 
   return {
     closed: false
   };
-
 }
 
 
@@ -888,6 +966,10 @@ async function processMarket(
   config,
   state
 ) {
+  console.log("");
+  console.log(
+    "--------------------------------"
+  );
 
   console.log(
     "Prüfe",
@@ -896,39 +978,27 @@ async function processMarket(
   );
 
   const data =
-
     await loadCandles(
       config.symbol,
       config.interval,
       500
     );
 
-  if (
-    data.length < 250
-  ) {
-
-    throw new Error(
-      "Nicht genügend Kerzen für "
-      +
-      config.symbol
-    );
-
-  }
-
   const ind =
     indicators(data);
 
   /*
-  Letzte Kerze kann offen sein.
-  Nur die vorletzte Kerze
-  darf ein Signal erzeugen.
+  Die letzte Binance-Kerze kann noch
+  offen sein.
+
+  Deshalb verwenden wir nur die
+  vorletzte Kerze für neue Signale.
   */
 
   const signalIndex =
     data.length - 2;
 
   const analysis =
-
     volatilityAnalysis(
       signalIndex,
       ind
@@ -938,16 +1008,13 @@ async function processMarket(
     analysis.signal;
 
   const signalTime =
-
     ind.closeTime[
       signalIndex
     ];
 
-
   state.markets[
     config.key
   ] = {
-
     symbol:
       config.symbol,
 
@@ -957,8 +1024,21 @@ async function processMarket(
     checkedAt:
       Date.now(),
 
+    checkedAtISO:
+      new Date().toISOString(),
+
     candleClose:
       signalTime,
+
+    candleCloseISO:
+      new Date(
+        signalTime
+      ).toISOString(),
+
+    lastPrice:
+      ind.close[
+        signalIndex
+      ],
 
     signal:
       signal
@@ -974,36 +1054,62 @@ async function processMarket(
       analysis.expansion ?? null,
 
     momentum:
-      analysis.moveRatio ?? null
+      analysis.moveRatio ?? null,
 
+    ema50:
+      ind.ema50[
+        signalIndex
+      ],
+
+    ema200:
+      ind.ema200[
+        signalIndex
+      ],
+
+    atr:
+      ind.ATR[
+        signalIndex
+      ],
+
+    dataStatus:
+      "OK"
   };
+
+  console.log(
+    config.symbol,
+    "Signal:",
+    state.markets[
+      config.key
+    ].signal
+  );
+
+  console.log(
+    config.symbol,
+    "Grund:",
+    analysis.reason
+  );
 
 
   /*
-  Offene Trades aktualisieren.
+  Bereits offene Trades für
+  diesen Markt prüfen.
   */
 
   const existing =
-
     state.open.filter(
-      t =>
-        t.symbol ===
+      trade =>
+        trade.symbol ===
         config.symbol
-
         &&
-
-        t.interval ===
+        trade.interval ===
         config.interval
     );
-
 
   for (
     const trade
     of existing
   ) {
-
     const result =
-
       processTrade(
         trade,
         data
@@ -1012,12 +1118,10 @@ async function processMarket(
     if (
       result.closed
     ) {
-
       state.open =
-
         state.open.filter(
-          t =>
-            t.id !==
+          item =>
+            item.id !==
             trade.id
         );
 
@@ -1026,23 +1130,38 @@ async function processMarket(
       );
 
       console.log(
-        "Trade geschlossen:",
+        "Paper-Trade geschlossen:",
         trade.symbol,
         trade.type,
-        result.record.reason
+        result.record.reason,
+        (
+          result.record.return
+          *
+          100
+        ).toFixed(2)
+        +
+        "%"
       );
-
     }
-
   }
 
 
-  if (!signal)
+  /*
+  Kein neues Signal:
+  hier endet die Prüfung.
+  */
+
+  if (!signal) {
     return;
+  }
 
 
-  const id =
+  /*
+  Jede Signalkerze nur
+  einmal verwenden.
+  */
 
+  const signalId =
     config.symbol
     +
     "-"
@@ -1053,140 +1172,266 @@ async function processMarket(
     +
     signalTime;
 
-
   if (
-    state.seenSignals[id]
-  )
+    state.seenSignals[
+      signalId
+    ]
+  ) {
+    console.log(
+      "Signal wurde bereits verarbeitet."
+    );
+
     return;
+  }
 
 
-  state.seenSignals[id] =
-    true;
+  /*
+  Pro Markt maximal
+  ein offener Paper-Trade.
+  */
+
+  const alreadyOpen =
+    state.open.some(
+      trade =>
+        trade.symbol ===
+        config.symbol
+        &&
+        trade.interval ===
+        config.interval
+    );
+
+  if (alreadyOpen) {
+    console.log(
+      "Bereits offener Paper-Trade vorhanden."
+    );
+
+    return;
+  }
 
 
   const entryIndex =
     signalIndex + 1;
 
-
   if (
     entryIndex >=
     data.length
-  )
-    return;
-
-
-  const alreadyOpen =
-
-    state.open.some(
-      t =>
-        t.symbol ===
-        config.symbol
-
-        &&
-
-        t.interval ===
-        config.interval
+  ) {
+    console.log(
+      "Noch keine nächste Kerze für Einstieg vorhanden."
     );
 
-
-  if (alreadyOpen)
     return;
+  }
+
+
+  /*
+  Signal erst jetzt als verarbeitet
+  markieren, damit kein Signal
+  verloren geht, wenn keine
+  Einstiegskerze verfügbar ist.
+  */
+
+  state.seenSignals[
+    signalId
+  ] = true;
 
 
   const trade =
-
     createTrade(
-
       config,
-
       signal,
-
       ind.open[
         entryIndex
       ],
-
       signalTime,
-
       ind.openTime[
         entryIndex
       ]
-
     );
 
+  if (
+    trade.fraction <= 0
+  ) {
+    throw new Error(
+      "Ungültige Positionsgröße für "
+      +
+      config.symbol
+    );
+  }
 
   state.open.push(
     trade
   );
 
-
   console.log(
     "Neuer Paper-Trade:",
-    config.symbol,
-    trade.type,
+    trade.symbol,
+    trade.type
+  );
+
+  console.log(
     "Entry:",
     trade.entry
   );
 
+  console.log(
+    "Stop:",
+    trade.stop
+  );
+
+  console.log(
+    "Ziel:",
+    trade.target
+  );
 }
 
 
 async function main() {
+  console.log(
+    "SafeSignal V11.2 gestartet"
+  );
 
   console.log(
-    "SafeSignal V11.1 gestartet"
+    "Nur Paper-Trading."
+  );
+
+  console.log(
+    "Keine echten Orders."
   );
 
   const state =
     loadState();
 
+  let successfulMarkets = 0;
+  let failedMarkets = 0;
+
   for (
     const config
     of CONFIGS
   ) {
-
     try {
-
       await processMarket(
         config,
         state
       );
 
+      successfulMarkets++;
+
     } catch (error) {
+      failedMarkets++;
+
+      console.error("");
+      console.error(
+        "FEHLER:",
+        config.symbol,
+        config.interval
+      );
 
       console.error(
-        config.symbol,
         error.message
       );
 
-    }
+      /*
+      Fehler ebenfalls speichern,
+      damit man im JSON sieht,
+      warum ein Markt fehlt.
+      */
 
+      state.markets[
+        config.key
+      ] = {
+        symbol:
+          config.symbol,
+
+        interval:
+          config.interval,
+
+        checkedAt:
+          Date.now(),
+
+        checkedAtISO:
+          new Date().toISOString(),
+
+        signal:
+          "ERROR",
+
+        reason:
+          error.message,
+
+        dataStatus:
+          "ERROR"
+      };
+    }
   }
 
   saveState(state);
 
+  console.log("");
   console.log(
-    "Fertig."
+    "================================"
   );
 
   console.log(
-    "Offene Trades:",
+    "SafeSignal V11.2 fertig"
+  );
+
+  console.log(
+    "Erfolgreiche Märkte:",
+    successfulMarkets
+  );
+
+  console.log(
+    "Fehlgeschlagene Märkte:",
+    failedMarkets
+  );
+
+  console.log(
+    "Offene Paper-Trades:",
     state.open.length
   );
 
   console.log(
-    "Geschlossene Trades:",
+    "Geschlossene Paper-Trades:",
     state.closed.length
   );
 
+  /*
+  WICHTIG:
+  Kein falsches grünes GitHub-Success,
+  wenn sämtliche Datenquellen
+  ausgefallen sind.
+  */
+
+  if (
+    successfulMarkets === 0
+  ) {
+    throw new Error(
+      "Kein einziger Markt konnte geladen werden. Workflow wird absichtlich als Fehler beendet."
+    );
+  }
+
+  if (
+    successfulMarkets <
+    CONFIGS.length
+  ) {
+    console.warn(
+      "WARNUNG: Nicht alle Märkte konnten geladen werden."
+    );
+  }
 }
 
 
 main().catch(
   error => {
+    console.error("");
+    console.error(
+      "SafeSignal V11.2 fehlgeschlagen:"
+    );
 
-    console.error(error);
+    console.error(
+      error.message
+    );
 
     process.exit(1);
-
   }
 );
