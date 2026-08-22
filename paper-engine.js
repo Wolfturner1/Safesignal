@@ -2,10 +2,8 @@ const fs = require("fs");
 
 const STATE_FILE = "paper-state.json";
 
-const API_ENDPOINTS = [
-  "https://data-api.binance.vision/api/v3",
-  "https://api.binance.com/api/v3"
-];
+const KRAKEN_API =
+  "https://api.kraken.com/0/public/OHLC";
 
 const FEE = 0.001;
 const SLIPPAGE = 0.0005;
@@ -13,33 +11,65 @@ const RISK = 0.005;
 
 const STOP_ATR = 1.8;
 const TARGET_ATR = 4.5;
+
 const MIN_EXPANSION = 1.30;
 const MIN_MOMENTUM = 0.70;
+
+
+/*
+Kraken verwendet bei Bitcoin
+traditionell XBT statt BTC.
+
+Primär versuchen wir USDT.
+Falls ein bestimmtes USDT-Paar
+nicht verfügbar ist, wird USD
+als Daten-Fallback verwendet.
+*/
 
 const CONFIGS = [
   {
     key: "ETH",
-    symbol: "ETHUSDT",
-    interval: "4h"
+    displaySymbol: "ETHUSDT",
+    pairs: [
+      "ETHUSDT",
+      "ETHUSD"
+    ],
+    interval: "4h",
+    krakenInterval: 240
   },
+
   {
     key: "SOL",
-    symbol: "SOLUSDT",
-    interval: "1h"
+    displaySymbol: "SOLUSDT",
+    pairs: [
+      "SOLUSDT",
+      "SOLUSD"
+    ],
+    interval: "1h",
+    krakenInterval: 60
   },
+
   {
     key: "BTC",
-    symbol: "BTCUSDT",
-    interval: "4h"
+    displaySymbol: "BTCUSDT",
+    pairs: [
+      "XBTUSDT",
+      "XBTUSD"
+    ],
+    interval: "4h",
+    krakenInterval: 240
   }
 ];
 
 
-function newState() {
-  const now = new Date().toISOString();
+function createNewState() {
+
+  const now =
+    new Date().toISOString();
 
   return {
-    version: "V11.2",
+    version: "V11.3",
+    dataProvider: "Kraken",
     created: now,
     updated: now,
     open: [],
@@ -51,57 +81,119 @@ function newState() {
 
 
 function loadState() {
+
   try {
-    if (!fs.existsSync(STATE_FILE)) {
-      return newState();
+
+    if (
+      !fs.existsSync(
+        STATE_FILE
+      )
+    ) {
+
+      return createNewState();
+
     }
 
-    const raw = fs.readFileSync(
-      STATE_FILE,
-      "utf8"
-    );
 
-    const state = JSON.parse(raw);
+    const raw =
+      fs.readFileSync(
+        STATE_FILE,
+        "utf8"
+      );
 
-    if (!Array.isArray(state.open)) {
+
+    const state =
+      JSON.parse(raw);
+
+
+    if (
+      !Array.isArray(
+        state.open
+      )
+    ) {
+
       state.open = [];
+
     }
 
-    if (!Array.isArray(state.closed)) {
+
+    if (
+      !Array.isArray(
+        state.closed
+      )
+    ) {
+
       state.closed = [];
+
     }
 
+
     if (
-      !state.seenSignals ||
-      typeof state.seenSignals !== "object"
+      !state.seenSignals
+      ||
+      typeof state.seenSignals
+      !== "object"
     ) {
+
       state.seenSignals = {};
+
     }
+
 
     if (
-      !state.markets ||
-      typeof state.markets !== "object"
+      !state.markets
+      ||
+      typeof state.markets
+      !== "object"
     ) {
+
       state.markets = {};
+
     }
 
-    state.version = "V11.2";
+
+    state.version =
+      "V11.3";
+
+
+    state.dataProvider =
+      "Kraken";
+
 
     return state;
 
-  } catch (error) {
+  }
+
+  catch(error) {
+
     console.error(
       "paper-state.json konnte nicht gelesen werden:",
       error.message
     );
 
-    return newState();
+
+    return createNewState();
+
   }
+
 }
 
 
-function saveState(state) {
-  state.updated = new Date().toISOString();
+function saveState(
+  state
+) {
+
+  state.updated =
+    new Date().toISOString();
+
+
+  state.version =
+    "V11.3";
+
+
+  state.dataProvider =
+    "Kraken";
+
 
   fs.writeFileSync(
     STATE_FILE,
@@ -111,50 +203,88 @@ function saveState(state) {
       2
     )
   );
+
 }
 
 
-function ema(values, period) {
-  const result =
-    new Array(values.length).fill(null);
+function ema(
+  values,
+  period
+) {
 
-  if (values.length < period) {
+  const result =
+    Array(
+      values.length
+    ).fill(null);
+
+
+  if (
+    values.length <
+    period
+  ) {
+
     return result;
+
   }
 
+
   let current = 0;
+
 
   for (
     let i = 0;
     i < period;
     i++
   ) {
-    current += values[i];
+
+    current +=
+      values[i];
+
   }
 
-  current /= period;
 
-  result[period - 1] =
+  current /=
+    period;
+
+
+  result[
+    period - 1
+  ] =
     current;
 
+
   const multiplier =
-    2 / (period + 1);
+    2 /
+    (period + 1);
+
 
   for (
     let i = period;
     i < values.length;
     i++
   ) {
+
     current =
-      values[i] * multiplier
+
+      values[i]
+      *
+      multiplier
+
       +
-      current * (1 - multiplier);
+
+      current
+      *
+      (1 - multiplier);
+
 
     result[i] =
       current;
+
   }
 
+
   return result;
+
 }
 
 
@@ -164,136 +294,136 @@ function atr(
   close,
   period = 14
 ) {
+
   const result =
-    new Array(close.length).fill(null);
+    Array(
+      close.length
+    ).fill(null);
+
 
   const trueRange =
-    new Array(close.length).fill(null);
+    Array(
+      close.length
+    ).fill(null);
+
 
   for (
     let i = 1;
     i < close.length;
     i++
   ) {
+
     trueRange[i] =
+
       Math.max(
-        high[i] - low[i],
+
+        high[i]
+        -
+        low[i],
+
         Math.abs(
-          high[i] - close[i - 1]
+          high[i]
+          -
+          close[i - 1]
         ),
+
         Math.abs(
-          low[i] - close[i - 1]
+          low[i]
+          -
+          close[i - 1]
         )
+
       );
+
   }
+
 
   if (
-    close.length <= period
+    close.length <=
+    period
   ) {
+
     return result;
+
   }
 
+
   let current = 0;
+
 
   for (
     let i = 1;
     i <= period;
     i++
   ) {
-    current += trueRange[i];
+
+    current +=
+      trueRange[i];
+
   }
 
-  current /= period;
+
+  current /=
+    period;
+
 
   result[period] =
     current;
 
+
   for (
-    let i = period + 1;
+    let i =
+      period + 1;
     i < close.length;
     i++
   ) {
+
     current =
+
       (
-        current * (period - 1)
+        current
+        *
+        (period - 1)
+
         +
+
         trueRange[i]
       )
+
       /
+
       period;
+
 
     result[i] =
       current;
+
   }
 
+
   return result;
+
 }
 
 
-function indicators(data) {
-  const open =
-    data.map(
-      row => Number(row[1])
-    );
-
-  const high =
-    data.map(
-      row => Number(row[2])
-    );
-
-  const low =
-    data.map(
-      row => Number(row[3])
-    );
-
-  const close =
-    data.map(
-      row => Number(row[4])
-    );
-
-  const openTime =
-    data.map(
-      row => Number(row[0])
-    );
-
-  const closeTime =
-    data.map(
-      row => Number(row[6])
-    );
-
-  return {
-    open,
-    high,
-    low,
-    close,
-    openTime,
-    closeTime,
-    ema50: ema(close, 50),
-    ema200: ema(close, 200),
-    ATR: atr(
-      high,
-      low,
-      close,
-      14
-    )
-  };
-}
-
-
-async function fetchWithTimeout(
-  url,
-  timeoutMs = 15000
+async function fetchJSON(
+  url
 ) {
+
   const controller =
     new AbortController();
 
+
   const timer =
     setTimeout(
-      () => controller.abort(),
-      timeoutMs
+      () =>
+        controller.abort(),
+      15000
     );
 
+
   try {
+
     const response =
       await fetch(
         url,
@@ -306,119 +436,423 @@ async function fetchWithTimeout(
               "application/json",
 
             "User-Agent":
-              "SafeSignal-V11.2"
+              "SafeSignal-V11.3"
           }
         }
       );
 
-    return response;
 
-  } finally {
-    clearTimeout(timer);
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        "HTTP "
+        +
+        response.status
+        +
+        " "
+        +
+        response.statusText
+      );
+
+    }
+
+
+    return await
+      response.json();
+
   }
+
+  finally {
+
+    clearTimeout(
+      timer
+    );
+
+  }
+
 }
 
 
-async function loadCandles(
-  symbol,
-  interval,
-  limit = 500
+async function loadKrakenCandles(
+  config
 ) {
+
   const errors = [];
 
+
   for (
-    const endpoint
-    of API_ENDPOINTS
+    const pair
+    of config.pairs
   ) {
-    const url =
-      endpoint
-      +
-      "/klines?symbol="
-      +
-      encodeURIComponent(symbol)
-      +
-      "&interval="
-      +
-      encodeURIComponent(interval)
-      +
-      "&limit="
-      +
-      limit;
 
     try {
+
       console.log(
-        "Versuche Marktdaten:",
-        endpoint,
-        symbol,
-        interval
+        "Versuche Kraken:",
+        pair,
+        config.krakenInterval
+        +
+        " Minuten"
       );
 
+
+      const url =
+
+        KRAKEN_API
+
+        +
+
+        "?pair="
+        +
+        encodeURIComponent(
+          pair
+        )
+
+        +
+
+        "&interval="
+        +
+        config.krakenInterval;
+
+
       const response =
-        await fetchWithTimeout(url);
-
-      if (!response.ok) {
-        throw new Error(
-          "HTTP "
-          +
-          response.status
-          +
-          " "
-          +
-          response.statusText
+        await fetchJSON(
+          url
         );
+
+
+      if (
+        !response
+        ||
+        !Array.isArray(
+          response.error
+        )
+      ) {
+
+        throw new Error(
+          "Ungültige Kraken-Antwort."
+        );
+
       }
 
-      const data =
-        await response.json();
 
-      if (!Array.isArray(data)) {
+      if (
+        response.error.length
+        >
+        0
+      ) {
+
         throw new Error(
-          "Antwort ist kein Kerzen-Array."
+          response.error.join(
+            ", "
+          )
         );
+
       }
 
-      if (data.length < 250) {
+
+      const result =
+        response.result;
+
+
+      if (
+        !result
+        ||
+        typeof result
+        !== "object"
+      ) {
+
+        throw new Error(
+          "Kein result-Feld."
+        );
+
+      }
+
+
+      /*
+      Kraken liefert zusätzlich
+      das Feld "last".
+
+      Der eigentliche Paar-Key
+      kann anders heißen als
+      der angefragte Name.
+      */
+
+      const pairKey =
+        Object.keys(
+          result
+        ).find(
+          key =>
+            key !==
+            "last"
+        );
+
+
+      if (
+        !pairKey
+      ) {
+
+        throw new Error(
+          "Kein OHLC-Paar gefunden."
+        );
+
+      }
+
+
+      const rows =
+        result[
+          pairKey
+        ];
+
+
+      if (
+        !Array.isArray(
+          rows
+        )
+      ) {
+
+        throw new Error(
+          "OHLC-Daten fehlen."
+        );
+
+      }
+
+
+      if (
+        rows.length <
+        250
+      ) {
+
         throw new Error(
           "Nur "
           +
-          data.length
+          rows.length
           +
           " Kerzen erhalten."
         );
+
       }
 
+
+      /*
+      Kraken OHLC:
+      [
+        time,
+        open,
+        high,
+        low,
+        close,
+        vwap,
+        volume,
+        count
+      ]
+
+      Wir wandeln die Daten
+      in unser internes Format.
+      */
+
+
+      const intervalMs =
+
+        config.krakenInterval
+        *
+        60
+        *
+        1000;
+
+
+      const candles =
+        rows.map(
+          row => {
+
+            const openTime =
+
+              Number(
+                row[0]
+              )
+              *
+              1000;
+
+
+            return {
+
+              openTime,
+
+              closeTime:
+                openTime
+                +
+                intervalMs
+                -
+                1,
+
+              open:
+                Number(
+                  row[1]
+                ),
+
+              high:
+                Number(
+                  row[2]
+                ),
+
+              low:
+                Number(
+                  row[3]
+                ),
+
+              close:
+                Number(
+                  row[4]
+                ),
+
+              volume:
+                Number(
+                  row[6]
+                )
+
+            };
+
+          }
+        );
+
+
       console.log(
-        "Marktdaten erfolgreich:",
-        symbol,
-        interval,
-        data.length,
+        "Kraken erfolgreich:",
+        pair,
+        candles.length,
         "Kerzen"
       );
 
-      return data;
 
-    } catch (error) {
+      return {
+        pairUsed:
+          pair,
+
+        pairKey,
+
+        candles
+      };
+
+    }
+
+    catch(error) {
+
       const message =
-        endpoint
+
+        pair
         +
         ": "
         +
         error.message;
 
-      errors.push(message);
 
-      console.error(
-        "Datenquelle fehlgeschlagen:",
+      errors.push(
         message
       );
+
+
+      console.error(
+        "Kraken-Paar fehlgeschlagen:",
+        message
+      );
+
     }
+
   }
 
+
   throw new Error(
-    "Alle Binance-Datenquellen fehlgeschlagen. "
+
+    "Alle Kraken-Paare fehlgeschlagen: "
     +
-    errors.join(" | ")
+    errors.join(
+      " | "
+    )
+
   );
+
+}
+
+
+function indicators(
+  candles
+) {
+
+  const open =
+    candles.map(
+      candle =>
+        candle.open
+    );
+
+
+  const high =
+    candles.map(
+      candle =>
+        candle.high
+    );
+
+
+  const low =
+    candles.map(
+      candle =>
+        candle.low
+    );
+
+
+  const close =
+    candles.map(
+      candle =>
+        candle.close
+    );
+
+
+  const openTime =
+    candles.map(
+      candle =>
+        candle.openTime
+    );
+
+
+  const closeTime =
+    candles.map(
+      candle =>
+        candle.closeTime
+    );
+
+
+  return {
+
+    open,
+    high,
+    low,
+    close,
+    openTime,
+    closeTime,
+
+    ema50:
+      ema(
+        close,
+        50
+      ),
+
+    ema200:
+      ema(
+        close,
+        200
+      ),
+
+    ATR:
+      atr(
+        high,
+        low,
+        close,
+        14
+      )
+
+  };
+
 }
 
 
@@ -426,126 +860,208 @@ function volatilityAnalysis(
   index,
   ind
 ) {
-  if (index < 220) {
+
+  if (
+    index < 220
+  ) {
+
     return {
       signal: null,
       reason:
         "Noch nicht genügend Kerzen.",
       expansion: null,
-      moveRatio: null
+      momentum: null
     };
+
   }
 
-  const price =
-    ind.close[index];
 
-  const A =
-    ind.ATR[index];
+  const price =
+    ind.close[
+      index
+    ];
+
+
+  const currentATR =
+    ind.ATR[
+      index
+    ];
+
 
   const ema50 =
-    ind.ema50[index];
+    ind.ema50[
+      index
+    ];
+
 
   const ema200 =
-    ind.ema200[index];
+    ind.ema200[
+      index
+    ];
+
 
   if (
-    !Number.isFinite(price) ||
-    !Number.isFinite(A) ||
-    !Number.isFinite(ema50) ||
-    !Number.isFinite(ema200)
+    !Number.isFinite(
+      price
+    )
+    ||
+    !Number.isFinite(
+      currentATR
+    )
+    ||
+    !Number.isFinite(
+      ema50
+    )
+    ||
+    !Number.isFinite(
+      ema200
+    )
   ) {
+
     return {
       signal: null,
       reason:
         "Indikatoren nicht vollständig.",
       expansion: null,
-      moveRatio: null
+      momentum: null
     };
+
   }
 
-  const atrPct =
-    A / price;
 
-  let avgATR = 0;
+  const atrPercent =
+    currentATR
+    /
+    price;
+
+
+  let averageATRPercent =
+    0;
+
 
   for (
-    let i = index - 20;
+    let i =
+      index - 20;
     i < index;
     i++
   ) {
+
     if (
       !Number.isFinite(
         ind.ATR[i]
       )
     ) {
+
       return {
         signal: null,
         reason:
           "ATR-Durchschnitt fehlt.",
         expansion: null,
-        moveRatio: null
+        momentum: null
       };
+
     }
 
-    avgATR +=
+
+    averageATRPercent +=
+
       ind.ATR[i]
       /
       ind.close[i];
+
   }
 
-  avgATR /= 20;
+
+  averageATRPercent /=
+    20;
+
 
   const expansion =
-    avgATR > 0
-      ?
-      atrPct / avgATR
-      :
-      0;
+
+    averageATRPercent
+    >
+    0
+
+    ?
+
+    atrPercent
+    /
+    averageATRPercent
+
+    :
+
+    0;
+
 
   const candleMove =
+
     Math.abs(
       ind.close[index]
       -
       ind.open[index]
     )
+
     /
+
     ind.open[index];
 
-  const moveRatio =
-    atrPct > 0
-      ?
-      candleMove / atrPct
-      :
-      0;
 
-  const bullishTrend =
-    price > ema50
-    &&
-    ema50 > ema200;
+  const momentum =
 
-  const bearishTrend =
-    price < ema50
-    &&
-    ema50 < ema200;
+    atrPercent
+    >
+    0
+
+    ?
+
+    candleMove
+    /
+    atrPercent
+
+    :
+
+    0;
+
 
   const bullishCandle =
+
     ind.close[index]
     >
     ind.open[index];
 
+
   const bearishCandle =
+
     ind.close[index]
     <
     ind.open[index];
+
+
+  const bullishTrend =
+
+    price > ema50
+    &&
+    ema50 > ema200;
+
+
+  const bearishTrend =
+
+    price < ema50
+    &&
+    ema50 < ema200;
+
 
   if (
     expansion <
     MIN_EXPANSION
   ) {
+
     return {
+
       signal: null,
 
       reason:
+
         "ATR Expansion "
         +
         expansion.toFixed(2)
@@ -557,21 +1073,28 @@ function volatilityAnalysis(
         "x",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
 
+
   if (
-    moveRatio <
+    momentum <
     MIN_MOMENTUM
   ) {
+
     return {
+
       signal: null,
 
       reason:
+
         "Kerzen-Momentum "
         +
-        moveRatio.toFixed(2)
+        momentum.toFixed(2)
         +
         "x ATR < "
         +
@@ -580,180 +1103,268 @@ function volatilityAnalysis(
         "x",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
 
+
   if (
-    bullishCandle &&
+    bullishCandle
+    &&
     !bullishTrend
   ) {
+
     return {
+
       signal: null,
 
       reason:
-        "Bullische Expansion ohne gültigen EMA-Trend.",
+        "Bullische Expansion ohne gültigen EMA50/EMA200-Trend.",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
 
+
   if (
-    bearishCandle &&
+    bearishCandle
+    &&
     !bearishTrend
   ) {
+
     return {
+
       signal: null,
 
       reason:
-        "Bärische Expansion ohne gültigen EMA-Trend.",
+        "Bärische Expansion ohne gültigen EMA50/EMA200-Trend.",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
 
+
   if (
-    bullishCandle &&
+    bullishCandle
+    &&
     bullishTrend
   ) {
+
     return {
+
       signal: {
-        type: "LONG",
-        atr: A
+        type:
+          "LONG",
+
+        atr:
+          currentATR
       },
 
       reason:
         "LONG-Setup erfüllt.",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
 
+
   if (
-    bearishCandle &&
+    bearishCandle
+    &&
     bearishTrend
   ) {
+
     return {
+
       signal: {
-        type: "SHORT",
-        atr: A
+        type:
+          "SHORT",
+
+        atr:
+          currentATR
       },
 
       reason:
         "SHORT-Setup erfüllt.",
 
       expansion,
-      moveRatio
+
+      momentum
+
     };
+
   }
+
 
   return {
+
     signal: null,
+
     reason:
       "Keine eindeutige Richtung.",
+
     expansion,
-    moveRatio
+
+    momentum
+
   };
+
 }
 
 
-function entryWithSlip(
+function entryWithSlippage(
   price,
   type
 ) {
-  if (type === "LONG") {
+
+  if (
+    type === "LONG"
+  ) {
+
     return (
-      price *
+      price
+      *
       (1 + SLIPPAGE)
     );
+
   }
 
+
   return (
-    price *
+    price
+    *
     (1 - SLIPPAGE)
   );
+
 }
 
 
-function exitWithSlip(
+function exitWithSlippage(
   price,
   type
 ) {
-  if (type === "LONG") {
+
+  if (
+    type === "LONG"
+  ) {
+
     return (
-      price *
+      price
+      *
       (1 - SLIPPAGE)
     );
+
   }
 
+
   return (
-    price *
+    price
+    *
     (1 + SLIPPAGE)
   );
+
 }
 
 
 function createTrade(
   config,
+  pairUsed,
   signal,
-  entryRaw,
+  rawEntry,
   signalTime,
   entryTime
 ) {
+
   const entry =
-    entryWithSlip(
-      entryRaw,
+
+    entryWithSlippage(
+      rawEntry,
       signal.type
     );
+
 
   let stop;
   let target;
 
+
   if (
-    signal.type === "LONG"
+    signal.type ===
+    "LONG"
   ) {
+
     stop =
+
       entry
       -
-      STOP_ATR * signal.atr;
+      STOP_ATR
+      *
+      signal.atr;
+
 
     target =
+
       entry
       +
-      TARGET_ATR * signal.atr;
+      TARGET_ATR
+      *
+      signal.atr;
 
-  } else {
-    stop =
-      entry
-      +
-      STOP_ATR * signal.atr;
-
-    target =
-      entry
-      -
-      TARGET_ATR * signal.atr;
   }
 
-  const stopPct =
+  else {
+
+    stop =
+
+      entry
+      +
+      STOP_ATR
+      *
+      signal.atr;
+
+
+    target =
+
+      entry
+      -
+      TARGET_ATR
+      *
+      signal.atr;
+
+  }
+
+
+  const stopPercent =
+
     Math.abs(
       entry - stop
     )
+
     /
+
     entry;
 
-  let fraction =
-    RISK / stopPct;
 
-  if (
-    !Number.isFinite(fraction)
-    ||
-    fraction <= 0
-  ) {
-    fraction = 0;
-  }
+  let fraction =
+
+    RISK
+    /
+    stopPercent;
+
 
   fraction =
     Math.min(
@@ -761,9 +1372,12 @@ function createTrade(
       1
     );
 
+
   return {
+
     id:
-      config.symbol
+
+      config.displaySymbol
       +
       "-"
       +
@@ -773,8 +1387,13 @@ function createTrade(
       +
       signalTime,
 
+    provider:
+      "Kraken",
+
+    pairUsed,
+
     symbol:
-      config.symbol,
+      config.displaySymbol,
 
     interval:
       config.interval,
@@ -802,7 +1421,9 @@ function createTrade(
 
     targetATR:
       TARGET_ATR
+
   };
+
 }
 
 
@@ -810,155 +1431,220 @@ function processTrade(
   trade,
   candles
 ) {
+
   for (
     const candle
     of candles
   ) {
-    const openTime =
-      Number(candle[0]);
 
     if (
-      openTime <
+      candle.openTime
+      <
       trade.entryTime
     ) {
+
       continue;
+
     }
 
-    const high =
-      Number(candle[2]);
 
-    const low =
-      Number(candle[3]);
+    let rawExit =
+      null;
 
-    let rawExit = null;
-    let reason = null;
+
+    let reason =
+      null;
+
 
     if (
-      trade.type === "LONG"
+      trade.type ===
+      "LONG"
     ) {
-      const stopHit =
-        low <= trade.stop;
-
-      const targetHit =
-        high >= trade.target;
 
       /*
-      Falls Stop und Ziel in derselben
-      Kerze liegen, rechnen wir
-      konservativ: Stop zuerst.
+      Konservative Regel:
+      Stop wird vor TP geprüft.
       */
 
-      if (stopHit) {
-        rawExit =
-          trade.stop;
-
-        reason =
-          "Stop-Loss";
-
-      } else if (targetHit) {
-        rawExit =
-          trade.target;
-
-        reason =
-          "Take-Profit";
-      }
-
-    } else {
-      const stopHit =
-        high >= trade.stop;
-
-      const targetHit =
-        low <= trade.target;
-
-      if (stopHit) {
-        rawExit =
-          trade.stop;
-
-        reason =
-          "Stop-Loss";
-
-      } else if (targetHit) {
-        rawExit =
-          trade.target;
-
-        reason =
-          "Take-Profit";
-      }
-    }
-
-    if (
-      rawExit !== null
-    ) {
-      const exit =
-        exitWithSlip(
-          rawExit,
-          trade.type
-        );
-
-      let marketReturn;
 
       if (
-        trade.type === "LONG"
+        candle.low
+        <=
+        trade.stop
       ) {
-        marketReturn =
-          (
-            exit -
-            trade.entry
-          )
-          /
-          trade.entry;
 
-      } else {
-        marketReturn =
-          (
-            trade.entry -
-            exit
-          )
-          /
-          trade.entry;
+        rawExit =
+          trade.stop;
+
+
+        reason =
+          "Stop-Loss";
+
       }
 
-      const feeCost =
-        FEE
-        *
-        2
-        *
-        trade.fraction;
+      else if (
+        candle.high
+        >=
+        trade.target
+      ) {
 
-      const result =
-        marketReturn
-        *
-        trade.fraction
-        -
-        feeCost;
+        rawExit =
+          trade.target;
 
-      return {
-        closed: true,
 
-        record: {
-          ...trade,
+        reason =
+          "Take-Profit";
 
-          exit,
+      }
 
-          exitTime:
-            Number(candle[6]),
-
-          reason,
-
-          marketReturn,
-
-          feeCost,
-
-          return:
-            result
-        }
-      };
     }
+
+    else {
+
+      if (
+        candle.high
+        >=
+        trade.stop
+      ) {
+
+        rawExit =
+          trade.stop;
+
+
+        reason =
+          "Stop-Loss";
+
+      }
+
+      else if (
+        candle.low
+        <=
+        trade.target
+      ) {
+
+        rawExit =
+          trade.target;
+
+
+        reason =
+          "Take-Profit";
+
+      }
+
+    }
+
+
+    if (
+      rawExit === null
+    ) {
+
+      continue;
+
+    }
+
+
+    const exit =
+
+      exitWithSlippage(
+        rawExit,
+        trade.type
+      );
+
+
+    let marketReturn;
+
+
+    if (
+      trade.type ===
+      "LONG"
+    ) {
+
+      marketReturn =
+
+        (
+          exit
+          -
+          trade.entry
+        )
+
+        /
+
+        trade.entry;
+
+    }
+
+    else {
+
+      marketReturn =
+
+        (
+          trade.entry
+          -
+          exit
+        )
+
+        /
+
+        trade.entry;
+
+    }
+
+
+    const feeCost =
+
+      FEE
+      *
+      2
+      *
+      trade.fraction;
+
+
+    const accountReturn =
+
+      marketReturn
+      *
+      trade.fraction
+
+      -
+
+      feeCost;
+
+
+    return {
+
+      closed:
+        true,
+
+      record: {
+
+        ...trade,
+
+        exit,
+
+        exitTime:
+          candle.closeTime,
+
+        reason,
+
+        marketReturn,
+
+        feeCost,
+
+        return:
+          accountReturn
+
+      }
+
+    };
+
   }
 
+
   return {
-    closed: false
+    closed:
+      false
   };
+
 }
 
 
@@ -966,57 +1652,85 @@ async function processMarket(
   config,
   state
 ) {
+
   console.log("");
   console.log(
-    "--------------------------------"
+    "=============================="
   );
+
 
   console.log(
     "Prüfe",
-    config.symbol,
+    config.displaySymbol,
     config.interval
   );
 
-  const data =
-    await loadCandles(
-      config.symbol,
-      config.interval,
-      500
+
+  const loaded =
+    await loadKrakenCandles(
+      config
     );
 
+
+  const pairUsed =
+    loaded.pairUsed;
+
+
+  const candles =
+    loaded.candles;
+
+
   const ind =
-    indicators(data);
+    indicators(
+      candles
+    );
+
 
   /*
-  Die letzte Binance-Kerze kann noch
-  offen sein.
+  Kraken dokumentiert,
+  dass die letzte OHLC-Zeile
+  die laufende, noch nicht
+  abgeschlossene Kerze ist.
 
-  Deshalb verwenden wir nur die
-  vorletzte Kerze für neue Signale.
+  Daher:
+  letzte abgeschlossene Kerze
+  = length - 2
   */
 
+
   const signalIndex =
-    data.length - 2;
+    candles.length - 2;
+
 
   const analysis =
+
     volatilityAnalysis(
       signalIndex,
       ind
     );
 
+
   const signal =
     analysis.signal;
+
 
   const signalTime =
     ind.closeTime[
       signalIndex
     ];
 
+
   state.markets[
     config.key
   ] = {
+
+    provider:
+      "Kraken",
+
+    pairUsed,
+
     symbol:
-      config.symbol,
+      config.displaySymbol,
 
     interval:
       config.interval,
@@ -1025,7 +1739,8 @@ async function processMarket(
       Date.now(),
 
     checkedAtISO:
-      new Date().toISOString(),
+      new Date()
+      .toISOString(),
 
     candleClose:
       signalTime,
@@ -1041,20 +1756,21 @@ async function processMarket(
       ],
 
     signal:
+
       signal
-        ?
-        signal.type
-        :
-        "WAIT",
+      ?
+      signal.type
+      :
+      "WAIT",
 
     reason:
       analysis.reason,
 
     expansion:
-      analysis.expansion ?? null,
+      analysis.expansion,
 
     momentum:
-      analysis.moveRatio ?? null,
+      analysis.momentum,
 
     ema50:
       ind.ema50[
@@ -1073,65 +1789,87 @@ async function processMarket(
 
     dataStatus:
       "OK"
+
   };
 
+
   console.log(
-    config.symbol,
+    "Datenquelle:",
+    pairUsed
+  );
+
+
+  console.log(
     "Signal:",
     state.markets[
       config.key
     ].signal
   );
 
+
   console.log(
-    config.symbol,
     "Grund:",
     analysis.reason
   );
 
 
   /*
-  Bereits offene Trades für
-  diesen Markt prüfen.
+  Vorhandene Paper-Trades
+  dieses Marktes prüfen.
   */
 
+
   const existing =
+
     state.open.filter(
       trade =>
-        trade.symbol ===
-        config.symbol
+
+        trade.symbol
+        ===
+        config.displaySymbol
+
         &&
-        trade.interval ===
+
+        trade.interval
+        ===
         config.interval
     );
+
 
   for (
     const trade
     of existing
   ) {
+
     const result =
+
       processTrade(
         trade,
-        data
+        candles
       );
+
 
     if (
       result.closed
     ) {
+
       state.open =
+
         state.open.filter(
           item =>
-            item.id !==
+            item.id
+            !==
             trade.id
         );
+
 
       state.closed.push(
         result.record
       );
 
+
       console.log(
         "Paper-Trade geschlossen:",
-        trade.symbol,
         trade.type,
         result.record.reason,
         (
@@ -1142,27 +1880,30 @@ async function processMarket(
         +
         "%"
       );
+
     }
+
   }
 
 
   /*
-  Kein neues Signal:
-  hier endet die Prüfung.
+  Kein Signal =
+  kein neuer Trade.
   */
 
-  if (!signal) {
+
+  if (
+    !signal
+  ) {
+
     return;
+
   }
 
-
-  /*
-  Jede Signalkerze nur
-  einmal verwenden.
-  */
 
   const signalId =
-    config.symbol
+
+    config.displaySymbol
     +
     "-"
     +
@@ -1172,176 +1913,255 @@ async function processMarket(
     +
     signalTime;
 
+
   if (
     state.seenSignals[
       signalId
     ]
   ) {
+
     console.log(
-      "Signal wurde bereits verarbeitet."
+      "Signal bereits verarbeitet."
     );
 
+
     return;
+
+  }
+
+
+  const alreadyOpen =
+
+    state.open.some(
+      trade =>
+
+        trade.symbol
+        ===
+        config.displaySymbol
+
+        &&
+
+        trade.interval
+        ===
+        config.interval
+    );
+
+
+  if (
+    alreadyOpen
+  ) {
+
+    console.log(
+      "Bereits offene Position."
+    );
+
+
+    return;
+
   }
 
 
   /*
-  Pro Markt maximal
-  ein offener Paper-Trade.
+  Die letzte Kraken-Kerze
+  ist die neue laufende Kerze.
+
+  Deren Open wird als
+  Paper-Entry verwendet.
   */
-
-  const alreadyOpen =
-    state.open.some(
-      trade =>
-        trade.symbol ===
-        config.symbol
-        &&
-        trade.interval ===
-        config.interval
-    );
-
-  if (alreadyOpen) {
-    console.log(
-      "Bereits offener Paper-Trade vorhanden."
-    );
-
-    return;
-  }
 
 
   const entryIndex =
     signalIndex + 1;
 
+
   if (
-    entryIndex >=
-    data.length
+    entryIndex
+    >=
+    candles.length
   ) {
+
     console.log(
-      "Noch keine nächste Kerze für Einstieg vorhanden."
+      "Keine Einstiegskerze vorhanden."
     );
 
+
     return;
+
+  }
+
+
+  const trade =
+
+    createTrade(
+
+      config,
+
+      pairUsed,
+
+      signal,
+
+      ind.open[
+        entryIndex
+      ],
+
+      signalTime,
+
+      ind.openTime[
+        entryIndex
+      ]
+
+    );
+
+
+  if (
+    !Number.isFinite(
+      trade.fraction
+    )
+    ||
+    trade.fraction
+    <=
+    0
+  ) {
+
+    throw new Error(
+      "Ungültige Positionsgröße."
+    );
+
   }
 
 
   /*
-  Signal erst jetzt als verarbeitet
-  markieren, damit kein Signal
-  verloren geht, wenn keine
-  Einstiegskerze verfügbar ist.
+  Erst markieren,
+  wenn Trade wirklich
+  angelegt wurde.
   */
+
 
   state.seenSignals[
     signalId
-  ] = true;
+  ] =
+    true;
 
-
-  const trade =
-    createTrade(
-      config,
-      signal,
-      ind.open[
-        entryIndex
-      ],
-      signalTime,
-      ind.openTime[
-        entryIndex
-      ]
-    );
-
-  if (
-    trade.fraction <= 0
-  ) {
-    throw new Error(
-      "Ungültige Positionsgröße für "
-      +
-      config.symbol
-    );
-  }
 
   state.open.push(
     trade
   );
 
+
   console.log(
-    "Neuer Paper-Trade:",
-    trade.symbol,
+    "NEUER PAPER-TRADE"
+  );
+
+
+  console.log(
+    config.displaySymbol,
     trade.type
   );
+
 
   console.log(
     "Entry:",
     trade.entry
   );
 
+
   console.log(
     "Stop:",
     trade.stop
   );
 
+
   console.log(
     "Ziel:",
     trade.target
   );
+
 }
 
 
 async function main() {
-  console.log(
-    "SafeSignal V11.2 gestartet"
-  );
 
   console.log(
-    "Nur Paper-Trading."
+    "SafeSignal V11.3 gestartet"
   );
 
+
   console.log(
-    "Keine echten Orders."
+    "Datenquelle: Kraken"
   );
+
+
+  console.log(
+    "Nur Paper-Trading"
+  );
+
+
+  console.log(
+    "Keine echten Orders"
+  );
+
 
   const state =
     loadState();
 
-  let successfulMarkets = 0;
-  let failedMarkets = 0;
+
+  let successes = 0;
+  let failures = 0;
+
 
   for (
     const config
     of CONFIGS
   ) {
+
     try {
+
       await processMarket(
         config,
         state
       );
 
-      successfulMarkets++;
 
-    } catch (error) {
-      failedMarkets++;
+      successes++;
+
+    }
+
+    catch(error) {
+
+      failures++;
+
 
       console.error("");
       console.error(
-        "FEHLER:",
-        config.symbol,
+        "MARKTFEHLER:",
+        config.displaySymbol,
         config.interval
       );
+
 
       console.error(
         error.message
       );
 
+
       /*
-      Fehler ebenfalls speichern,
-      damit man im JSON sieht,
-      warum ein Markt fehlt.
+      Selbst bei Fehler wird
+      der Markt im State sichtbar.
+
+      markets darf also nicht
+      mehr kommentarlos leer sein.
       */
+
 
       state.markets[
         config.key
       ] = {
+
+        provider:
+          "Kraken",
+
         symbol:
-          config.symbol,
+          config.displaySymbol,
 
         interval:
           config.interval,
@@ -1350,7 +2170,8 @@ async function main() {
           Date.now(),
 
         checkedAtISO:
-          new Date().toISOString(),
+          new Date()
+          .toISOString(),
 
         signal:
           "ERROR",
@@ -1360,78 +2181,90 @@ async function main() {
 
         dataStatus:
           "ERROR"
+
       };
+
     }
+
   }
 
-  saveState(state);
+
+  saveState(
+    state
+  );
+
 
   console.log("");
   console.log(
-    "================================"
+    "=============================="
   );
 
+
   console.log(
-    "SafeSignal V11.2 fertig"
+    "SafeSignal V11.3 fertig"
   );
+
 
   console.log(
     "Erfolgreiche Märkte:",
-    successfulMarkets
+    successes
   );
 
+
   console.log(
-    "Fehlgeschlagene Märkte:",
-    failedMarkets
+    "Fehler:",
+    failures
   );
+
 
   console.log(
     "Offene Paper-Trades:",
     state.open.length
   );
 
+
   console.log(
     "Geschlossene Paper-Trades:",
     state.closed.length
   );
 
+
   /*
-  WICHTIG:
-  Kein falsches grünes GitHub-Success,
-  wenn sämtliche Datenquellen
-  ausgefallen sind.
+  Kein falsches Success,
+  wenn gar keine Daten
+  funktioniert haben.
   */
 
-  if (
-    successfulMarkets === 0
-  ) {
-    throw new Error(
-      "Kein einziger Markt konnte geladen werden. Workflow wird absichtlich als Fehler beendet."
-    );
-  }
 
   if (
-    successfulMarkets <
-    CONFIGS.length
+    successes === 0
   ) {
-    console.warn(
-      "WARNUNG: Nicht alle Märkte konnten geladen werden."
+
+    throw new Error(
+      "Kraken konnte keinen einzigen Markt liefern."
     );
+
   }
+
 }
 
 
-main().catch(
+main()
+.catch(
   error => {
+
     console.error("");
     console.error(
-      "SafeSignal V11.2 fehlgeschlagen:"
+      "SafeSignal V11.3 fehlgeschlagen:"
     );
+
 
     console.error(
       error.message
     );
 
+
     process.exit(1);
+
   }
 );
